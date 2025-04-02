@@ -1,11 +1,10 @@
 import torch
 import argparse
 import matplotlib.pyplot as plt
-from pathlib import Paths
+from pathlib import Path
 import os
 import numpy as np
 import re
-import cv2
 from matching.utils import get_image_pairs_paths, get_model_folders, load_torch_save, pair_images_in_folder
 from matching import get_matcher, available_models
 from matching.viz import plot_matches, plot_barplot_curr_folder
@@ -13,23 +12,23 @@ from utils_segmentation import load_segmentation_model, segment_image, filter_ke
 
 
 
-def masking_result(result, mask0 = None, mask1 = None):
+def masking_result(result, mask_number, mask0 = None, mask1 = None):
 
-    if(mask0 is not None and mask1 is not None):
+    if mask0 is not None and mask1 is not None and mask_number is not None:
 
         matched_kpts0, matched_kpts1 = result["matched_kpts0"], result["matched_kpts1"]
         all_kpts0, all_kpts1 = result["all_kpts0"], result["all_kpts1"]
         inlier_kpts0, inlier_kpts1 = result["inlier_kpts0"], result["inlier_kpts1"]
 
         # Filter keypoints based on segmentation masks - ALL
-        all_filtered_kpts0, deleted_kpts0 = filter_keypoints_by_mask(all_kpts0, mask0)
-        all_filtered_kpts1, deleted_kpts1 = filter_keypoints_by_mask(all_kpts1, mask1)
+        all_filtered_kpts0, deleted_kpts0 = filter_keypoints_by_mask(all_kpts0, mask0, mask_number = mask_number)
+        all_filtered_kpts1, deleted_kpts1 = filter_keypoints_by_mask(all_kpts1, mask1, mask_number = mask_number)
 
         # Filter keypoints based on segmentation masks - Matched
-        matched_filtered_kpts0, matched_filtered_kpts1, deleted_kpts0, deleted_kpts1  = filter_matched_keypoints_by_mask(matched_kpts0, matched_kpts1, mask0, mask1)
+        matched_filtered_kpts0, matched_filtered_kpts1, deleted_kpts0, deleted_kpts1  = filter_matched_keypoints_by_mask(matched_kpts0, matched_kpts1, mask0, mask1, mask_number = mask_number)
 
         # Filter keypoints based on segmentation masks - Matched
-        inlier_filtered_kpts0, inlier_filtered_kpts1, deleted_kpts0, deleted_kpts = filter_matched_keypoints_by_mask(inlier_kpts0, inlier_kpts1, mask0, mask1)
+        inlier_filtered_kpts0, inlier_filtered_kpts1, deleted_kpts0, deleted_kpts = filter_matched_keypoints_by_mask(inlier_kpts0, inlier_kpts1, mask0, mask1, mask_number = mask_number)
 
         # Create a new result dictionary with the filtered keypoints
         filtered_result = result.copy()  # Start with a copy of the original result
@@ -67,42 +66,8 @@ def masking_result(result, mask0 = None, mask1 = None):
     else:
         return result
 
-def main(args):
-    image_size = [args.im_size, args.im_size]
-    args.out_dir.mkdir(exist_ok=True, parents=True)
 
-    # Choose a matcher
-    matcher = get_matcher(args.matcher, device=args.device, max_num_keypoints=args.n_kpts)
-    pairs_of_paths, folders_name = get_image_pairs_paths(args.input) #changed the return arguments
 
-    for i, (img0_path, img1_path) in enumerate(pairs_of_paths):
-
-        image0 = matcher.load_image(img0_path, resize=image_size)
-        image1 = matcher.load_image(img1_path, resize=image_size)
-        result = matcher(image0, image1)
-        
-        out_str = f"Paths: {str(img0_path), str(img1_path)}. Found {result['num_inliers']} inliers after RANSAC. "
-
-        if not args.no_viz:
-            viz_path = args.out_dir / f"output_{i}_matches.jpg"
-            plot_matches(image0, image1, result, save_path=viz_path)
-            out_str += f"Viz saved in {viz_path}. "
-
-        result["img0_path"] = img0_path
-        result["img1_path"] = img1_path
-        result["matcher"] = args.matcher
-        result["n_kpts"] = args.n_kpts
-        result["im_size"] = args.im_size
-
-        dict_path = args.out_dir / f"output_{i}_result.torch"
-        torch.save(result, dict_path)
-        out_str += f"Output saved in {dict_path}"
-        print(out_str)
-
-'''
-@author: Loris
-result is a dict with those arguments: num_inliers, all_kpts0/1, matched_kpts0/1
-'''
 def robustness_analysis(out_dir, plot=True):
     """
     Analyzes the robustness of model outputs by computing inlier ratios from saved results.
@@ -180,86 +145,101 @@ def robustness_analysis(out_dir, plot=True):
         print(f"Mean array {key}: {val}")
 
 
-def extract_keypoints(args, segmentation_model=None):
-    image_size = [args.im_size, args.im_size]
-    subfolder_mask = {}
-    pair_dict = {}
-    gt_flag = False
+def extract_keypoints(args, mask_number, segmentation_model):
+    """
+    Extract keypoints from image pairs, apply segmentation masks, and save the results.
 
-    #Check if exists the out dir
+    Args:
+        args: The arguments containing various configurations (like image size, matcher type, etc.).
+        segmentation_model: A pre-trained segmentation model (default is None, used for the 'gt' folder).
+        mask_number: The class number used to filter keypoints.
+
+    Returns:
+        None: Saves the results in the specified output directory.
+    """
+
+    image_size = [args.im_size, args.im_size]  # Set the image size for resizing images
+    subfolder_mask = {}  # Dictionary to store masks for each subfolder
+    pair_dict = {}  # Dictionary to store image pair masks
+    gt_flag = False  # Flag to track if we are processing the 'gt' folder
+
+    # Ensure the output directory exists
     args.out_dir.mkdir(exist_ok=True, parents=True)
-    
-    # Choose a matcher
+
+    # Initialize the matcher (used for finding keypoints in the images)
     matcher = get_matcher(args.matcher, device=args.device, max_num_keypoints=args.n_kpts)
-    
-    model_folders = get_model_folders(args.input) #ex: [gt, hat, lq]
+
+    # Get the folders in the input directory (e.g., 'gt', 'hat', 'lq')
+    model_folders = get_model_folders(args.input)
 
     for model in model_folders:
-
-        # output/model creation
+        # Extract model name and set up the output folder
         model_name = os.path.split(model)[1]
-        out_model_path = os.path.join(args.out_dir,model_name)
+        out_model_path = os.path.join(args.out_dir, model_name)
         os.makedirs(name=out_model_path, exist_ok=True)
 
-        # input_dir/model/image_folders
-        subfolders = os.listdir(model) #ex: [test_pipeline, etc..]
+        # Get the subfolders inside the model directory (e.g., 'test_pipeline', 'etc.')
+        subfolders = os.listdir(model)
 
-        for subfolder in subfolders: #ex: [subfolder/image_pair1.png, image_pair2.png] , in each subfolders onlyt two images
-            # intializing mask to None in case there is no gt folder
-            mask0 = None
-            mask1 = None
+        for subfolder in subfolders:
+            mask0 = None  # Initialize mask0
+            mask1 = None  # Initialize mask1
 
+            # Path to the subfolder containing image pairs
             subfolder_path = os.path.join(model, subfolder)
-            pairs_of_paths, folder_names = get_image_pairs_paths(subfolder_path) #returns only two elements in the iterator
+            pairs_of_paths, folder_names = get_image_pairs_paths(subfolder_path)  # Get pairs of image paths
 
-            # input_dir/model/image_folders/pair_folder/...png
-            for i, (img0_path, img1_path) in enumerate(pairs_of_paths): #[pair0, pair1,...]
-                
-                pair_folder_name = os.path.split(folder_names[i])[1]
+            for i, (img0_path, img1_path) in enumerate(pairs_of_paths):  # Iterate through image pairs
+                pair_folder_name = os.path.split(folder_names[i])[1]  # Get the name of the image pair folder
 
+                # Get the image names (without extensions)
                 image_0_name = Path(img0_path).stem
                 img_1_name = Path(img1_path).stem
+                
+                # Load the images (resize them to the specified size)
                 image0 = matcher.load_image(img0_path, resize=image_size)
                 image1 = matcher.load_image(img1_path, resize=image_size)
 
-
+                # If processing the 'gt' folder, segment both images and save the masks
                 if model_name == "gt":
                     gt_flag = True
-                    # Segment both images
-                    mask0 = segment_image(segmentation_model, image0, False ,args.device)
+                    mask0 = segment_image(segmentation_model, image0, False, args.device)
                     mask1 = segment_image(segmentation_model, image1, False, args.device)
                     pair_dict[pair_folder_name] = (mask0, mask1)
                     subfolder_mask[subfolder] = pair_dict
 
-
+                # If we are processing other models and 'gt' flag is set, use the 'gt' masks for filtering
                 elif(gt_flag):
-                        # retrieve the mask from the gt folder
-                        mask0 = subfolder_mask[subfolder][pair_folder_name][0]
-                        mask1 = subfolder_mask[subfolder][pair_folder_name][1]
+                    mask0 = subfolder_mask[subfolder][pair_folder_name][0]
+                    mask1 = subfolder_mask[subfolder][pair_folder_name][1]
 
+                # Perform keypoint matching between the two images
                 result = matcher(image0, image1)
 
-                filtered_result = masking_result(result, mask0, mask1)
+                # Filter the matched keypoints based on the masks (using the mask_number for the specified class)
+                filtered_result = masking_result(result, mask_number, mask0, mask1)
 
-                out_str = f"Paths: {str(img0_path), str(img1_path)}. Found {filtered_result['num_inliers']} inliers after RANSAC. "
-                #curr_folder_name = os.path.split(folder_names[i])[-1]
+                # Print the paths and the number of inliers found after RANSAC
+                out_str = f"Paths: {str(img0_path), str(img1_path)}. \n Found {filtered_result['num_inliers']} inliers after RANSAC. "
 
-                #output_dir/model/image_folders/   creation
+                # Create the output folder for the current subfolder and image pair
                 curr_path_folder_image = os.path.join(out_model_path, subfolder)
                 os.makedirs(name=curr_path_folder_image, exist_ok=True)
 
-                if not args.no_viz and filtered_result["num_inliers"] != 0: 
-                    #output_dir/model/image_folders/result.png-torch
-                    viz_path = os.path.join(curr_path_folder_image, f"output_{subfolder}_{image_0_name}_{img_1_name}_matches.jpg") #str(out_model_path) / f"output_{i}_matches.jpg"
+                # If visualization is enabled and there are inliers, save the visualization
+                if not args.no_viz and filtered_result["num_inliers"] != 0:
+                    viz_path = os.path.join(curr_path_folder_image, f"output_{subfolder}_{image_0_name}_{img_1_name}_matches.jpg")
                     plot_matches(image0, image1, filtered_result, save_path=viz_path)
                     out_str += f"Viz saved in {viz_path}. "
 
+                # Add additional information to the filtered result (e.g., paths, matcher type, image size)
                 filtered_result["img0_path"] = img0_path
                 filtered_result["img1_path"] = img1_path
                 filtered_result["matcher"] = args.matcher
                 filtered_result["n_kpts"] = args.n_kpts
                 filtered_result["im_size"] = args.im_size
 
+                # Save the filtered result as a Torch file in the output directory
                 dict_path = os.path.join(curr_path_folder_image, f"output_{subfolder}_{image_0_name}_{img_1_name}_result.torch")
                 torch.save(filtered_result, dict_path)
                 out_str += f"Output saved in {out_model_path}"
@@ -289,15 +269,17 @@ def parse_args():
 
     parser.add_argument(
         "--input",
-        type=str,
+        type=Path,
         default=None, #"assets/example_pairs"
         help="path to either (1) dir with dirs with image pairs or (2) txt file with two image paths per line",
     )
+
     parser.add_argument("--out_dir", type=Path, default=None, help="path where outputs are saved") # frames_matched\name_folder_matched 
     #parser.add_argument("--sr_robustness", action="store_true", help="Apply the matcher and make the comparison and create a metric among swin, hat and pipeline output to prove the robustness of the model.") # it takes as input a path like: input_dir/models/image_folder/pair_folder/image.png
     parser.add_argument("--analysis",action="store_true", help="making the analysis of robustness without the inference process") 
     parser.add_argument("--extract_keypoints", action="store_true", help="making the analysis of robustness without the inference process") 
     parser.add_argument("--images_to_be_paired", type=Path, default=None, help ="pair the image in folders by the name.") # frames_source\salient_frames_name_folder that could be salient_frames_name_folder/models/list_of_images.png or salient_frames_name_folder/models/image_folders/list_of_images.png
+    parser.add_argument("--mask_type", type=int, default=None)
 
     args = parser.parse_args()
 
@@ -307,16 +289,12 @@ def parse_args():
     return args
 
 
-if __name__ == "__main__":
-    args = parse_args()
-    print(torch.cuda.is_available())
-    print(args)
-
+def main(args):
     if(not(args.images_to_be_paired is None)):
-        print("Creating folder")
-        # args.out to save matched frames
-        assert not(args.out_dir is None)
-        pair_images_in_folder(args.images_to_be_paired, args.out_dir)
+            print("Creating folder")
+            # args.out to save matched frames
+            assert not(args.out_dir is None)
+            pair_images_in_folder(args.images_to_be_paired, args.out_dir)
 
     if(args.analysis):
         assert not(args.out_dir is None)
@@ -326,7 +304,18 @@ if __name__ == "__main__":
         #args in to consider the input folder, args out to write the ouput
         assert not(args.input is None and args.out is None)
         seg_model = load_segmentation_model(device=args.device)
-        extract_keypoints(args, seg_model)
+        print(args.mask_type)
+        extract_keypoints(args, args.mask_type, seg_model)
+
+
+if __name__ == "__main__":
+    args = parse_args()
+    print(torch.cuda.is_available())
+    print(args)
+
+    main(args)
+
+    
     
     
 

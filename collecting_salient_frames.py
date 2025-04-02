@@ -1,3 +1,6 @@
+'''
+@author: Loris Panza
+'''
 from pathlib import Path
 import cv2
 import os

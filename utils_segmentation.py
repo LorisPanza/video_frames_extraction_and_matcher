@@ -1,5 +1,5 @@
 '''
-@author: Loris
+@author: Loris Panza
 '''
 import cv2
 from torchvision.models.segmentation import deeplabv3_resnet50
@@ -25,7 +25,7 @@ def load_segmentation_model(device="cuda"):
     return model
 
 
-def filter_keypoints_by_mask(keypoints, mask):
+def filter_keypoints_by_mask(keypoints, mask, mask_number):
     """
     Filter keypoints that fall within the segmented region defined by the mask.
     
@@ -42,14 +42,14 @@ def filter_keypoints_by_mask(keypoints, mask):
     for kp in keypoints:
         x, y = int(kp[0]), int(kp[1])
         # Check if the keypoint is within the desired region (here, class '4' is the target class).
-        if mask[y, x] == 4:  # Assuming class '4' corresponds to the region of interest.
+        if mask[y, x] == mask_number:  # Assuming class '4' corresponds to the region of interest.
             filtered_kpts.append(kp)
         else: 
             deleted_kpts.append(kp)
     return np.array(filtered_kpts), np.array(deleted_kpts)
 
 
-def filter_matched_keypoints_by_mask(keypoints0, keypoints1, mask0, mask1):
+def filter_matched_keypoints_by_mask(keypoints0, keypoints1, mask0, mask1, mask_number):
     """
     Filter keypoints from two sets (keypoints0 and keypoints1) that fall within the segmented region 
     defined by two masks (mask0 and mask1).
@@ -74,7 +74,7 @@ def filter_matched_keypoints_by_mask(keypoints0, keypoints1, mask0, mask1):
         x0, y0 = int(kp0[0]), int(kp0[1])
         x1, y1 = int(kp1[0]), int(kp1[1])
         # Check if both keypoints are within the desired region for both images.
-        if mask0[y0, x0] == 4 and mask1[y1, x1] == 4:
+        if mask0[y0, x0] == mask_number and mask1[y1, x1] == mask_number:
             filtered_kpts0.append(kp0)
             filtered_kpts1.append(kp1)
         else: 
@@ -154,9 +154,9 @@ def segment_image(model, image, visualize=False, device="cuda"):
 
     # Print the distribution of the classes in the mask.
     unique, counts = np.unique(mask, return_counts=True)
-    print("Mask Distribution:")
-    for u, c in zip(unique, counts):
-        print(f"Class {u}: {c} pixels")
+    #print("Mask Distribution:")
+    #for u, c in zip(unique, counts):
+    #    print(f"Class {u}: {c} pixels")
     
     # If visualize is True, overlay the mask on the image.
     if visualize:
