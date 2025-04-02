@@ -1,6 +1,5 @@
 import torch
 import argparse
-import matplotlib.pyplot as plt
 from pathlib import Path
 import os
 import numpy as np
@@ -8,62 +7,86 @@ import re
 from matching.utils import get_image_pairs_paths, get_model_folders, load_torch_save, pair_images_in_folder
 from matching import get_matcher, available_models
 from matching.viz import plot_matches, plot_barplot_curr_folder
-from utils_segmentation import load_segmentation_model, segment_image, filter_keypoints_by_mask, filter_matched_keypoints_by_mask
+from utils_segmentation import load_segmentation_model, segment_image, filter_keypoints_by_mask, filter_matched_keypoints_by_mask, overlay_mask
+import json
 
 
 
-def masking_result(result, mask_number, mask0 = None, mask1 = None):
 
+def masking_result(result, mask_number, mask0=None, mask1=None):
+    """
+    Filters keypoints based on segmentation masks.
+
+    Args:
+        result (dict): Dictionary containing keypoints, matches, and descriptors.
+        mask_number (int): The class number in the segmentation mask used to filter keypoints.
+        mask0 (ndarray, optional): Segmentation mask for the first image. Defaults to None.
+        mask1 (ndarray, optional): Segmentation mask for the second image. Defaults to None.
+
+    Returns:
+        dict: Updated result dictionary with keypoints filtered based on the segmentation masks.
+    """
+
+    # Ensure masks are provided before proceeding with filtering
     if mask0 is not None and mask1 is not None and mask_number is not None:
 
+        # Extract keypoints from the result dictionary
         matched_kpts0, matched_kpts1 = result["matched_kpts0"], result["matched_kpts1"]
         all_kpts0, all_kpts1 = result["all_kpts0"], result["all_kpts1"]
         inlier_kpts0, inlier_kpts1 = result["inlier_kpts0"], result["inlier_kpts1"]
 
-        # Filter keypoints based on segmentation masks - ALL
-        all_filtered_kpts0, deleted_kpts0 = filter_keypoints_by_mask(all_kpts0, mask0, mask_number = mask_number)
-        all_filtered_kpts1, deleted_kpts1 = filter_keypoints_by_mask(all_kpts1, mask1, mask_number = mask_number)
+        # Filter all detected keypoints based on the segmentation masks
+        all_filtered_kpts0, deleted_kpts0 = filter_keypoints_by_mask(all_kpts0, mask0, mask_number=mask_number)
+        all_filtered_kpts1, deleted_kpts1 = filter_keypoints_by_mask(all_kpts1, mask1, mask_number=mask_number)
 
-        # Filter keypoints based on segmentation masks - Matched
-        matched_filtered_kpts0, matched_filtered_kpts1, deleted_kpts0, deleted_kpts1  = filter_matched_keypoints_by_mask(matched_kpts0, matched_kpts1, mask0, mask1, mask_number = mask_number)
+        # Filter matched keypoints based on segmentation masks
+        matched_filtered_kpts0, matched_filtered_kpts1, deleted_kpts0, deleted_kpts1 = filter_matched_keypoints_by_mask(
+            matched_kpts0, matched_kpts1, mask0, mask1, mask_number=mask_number
+        )
 
-        # Filter keypoints based on segmentation masks - Matched
-        inlier_filtered_kpts0, inlier_filtered_kpts1, deleted_kpts0, deleted_kpts = filter_matched_keypoints_by_mask(inlier_kpts0, inlier_kpts1, mask0, mask1, mask_number = mask_number)
+        # Filter inlier keypoints (keypoints that survived RANSAC filtering)
+        inlier_filtered_kpts0, inlier_filtered_kpts1, deleted_kpts0, deleted_kpts = filter_matched_keypoints_by_mask(
+            inlier_kpts0, inlier_kpts1, mask0, mask1, mask_number=mask_number
+        )
 
-        # Create a new result dictionary with the filtered keypoints
-        filtered_result = result.copy()  # Start with a copy of the original result
+        # Create a copy of the original result dictionary to store the filtered keypoints
+        filtered_result = result.copy()
 
-        # Update the keypoints with filtered ones
+        # Update the result dictionary with the filtered keypoints
         filtered_result["all_kpts0"] = all_filtered_kpts0
         filtered_result["all_kpts1"] = all_filtered_kpts1
 
-        # Update the matched keypoints with filtered ones
         filtered_result["matched_kpts0"] = matched_filtered_kpts0
         filtered_result["matched_kpts1"] = matched_filtered_kpts1
 
-        # Update the inlier keypoints with filtered ones
         filtered_result["inlier_kpts0"] = inlier_filtered_kpts0
         filtered_result["inlier_kpts1"] = inlier_filtered_kpts1
 
-        # Find indices of kept keypoints
-        if len(all_filtered_kpts0!=0):
+        # Ensure the descriptors are updated based on the filtered keypoints
+        if len(all_filtered_kpts0) != 0:
+            # Keep descriptors only for the keypoints that were not removed
             kept_indices = [i for i, kp in enumerate(all_kpts0) if kp in all_filtered_kpts0]
             filtered_result["all_desc0"] = result["all_desc0"][kept_indices]
         else:
+            # If no keypoints remain, return an empty descriptor array
             filtered_result["all_desc0"] = np.array([])
-            
 
-        if len(all_filtered_kpts1!=0):
+        if len(all_filtered_kpts1) != 0:
             kept_indices = [i for i, kp in enumerate(all_kpts1) if kp in all_filtered_kpts1]
             filtered_result["all_desc1"] = result["all_desc1"][kept_indices]
         else:
             filtered_result["all_desc1"] = np.array([])
 
+        # Update the number of inliers after filtering
         filtered_result["num_inliers"] = len(inlier_filtered_kpts0)
+
+        # Preserve the homography matrix (unchanged)
         filtered_result["H"] = result["H"]
 
         return filtered_result
+
     else:
+        # If masks are not provided, return the original result without filtering
         return result
 
 
@@ -213,6 +236,7 @@ def extract_keypoints(args, mask_number, segmentation_model):
                     mask0 = subfolder_mask[subfolder][pair_folder_name][0]
                     mask1 = subfolder_mask[subfolder][pair_folder_name][1]
 
+
                 # Perform keypoint matching between the two images
                 result = matcher(image0, image1)
 
@@ -290,6 +314,9 @@ def parse_args():
 
 
 def main(args):
+
+    assert args.mask_type in range(1,21) or args.mask_type is None
+
     if(not(args.images_to_be_paired is None)):
             print("Creating folder")
             # args.out to save matched frames
@@ -304,8 +331,15 @@ def main(args):
         #args in to consider the input folder, args out to write the ouput
         assert not(args.input is None and args.out is None)
         seg_model = load_segmentation_model(device=args.device)
-        print(args.mask_type)
+        with open('pascalVOC.json') as f:
+            if(args.mask_type in range(1,21)):
+                VOC_classes = json.load(f)
+                class_chosen = VOC_classes[str(args.mask_type)]
+                print(f"Class to be masked: {class_chosen}")
+            f.close()
         extract_keypoints(args, args.mask_type, seg_model)
+
+        
 
 
 if __name__ == "__main__":

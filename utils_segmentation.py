@@ -2,11 +2,14 @@
 @author: Loris Panza
 '''
 import cv2
-from torchvision.models.segmentation import deeplabv3_resnet50
 from torchvision import transforms
 import torch
 import numpy as np
-import matplotlib.pyplot as plt
+
+import matplotlib
+from  matplotlib import pyplot as plt
+from torchvision.models.segmentation import deeplabv3_resnet50, DeepLabV3_ResNet50_Weights
+
 
 
 def load_segmentation_model(device="cuda"):
@@ -19,9 +22,13 @@ def load_segmentation_model(device="cuda"):
     Returns:
         model: The loaded DeepLabV3 segmentation model.
     """
-    # Load the pre-trained DeepLabV3 model with ResNet-50 backbone.
-    model = deeplabv3_resnet50(pretrained=True).to(device)
-    model.eval()  # Set the model to evaluation mode.
+
+    weights = DeepLabV3_ResNet50_Weights.COCO_WITH_VOC_LABELS_V1 # Vecchia versione supportata
+    # oppure la versione più aggiornata:
+    # weights = DeepLabV3_ResNet50_Weights.DEFAULT
+
+    model = deeplabv3_resnet50(weights=weights).to(device)  # Uso corretto
+    model.eval()
     return model
 
 
