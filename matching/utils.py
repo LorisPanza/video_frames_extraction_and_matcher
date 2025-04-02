@@ -74,24 +74,40 @@ def get_model_folders(inputs):
     return dirs
 
 def create_paired_folder(output_model):
-        pair_pattern = re.compile(r"(pair_\d+)")
-        for folder_image in sorted(Path(output_model).glob("*")):
-            # Create subfolders and move files into them based on pairs
-            files = [f for f in os.listdir(folder_image) if f.endswith(".jpg")]
-            for file in files:
-                match = pair_pattern.search(file)  # Search for the pair identifier
-                if match:
-                    pair_id = match.group(1)  # Extract the pair identifier (e.g., "pair_1")
-                    subfolder = os.path.join(folder_image, pair_id)
-                # Create subfolder if it doesn't exist
-                if not os.path.exists(subfolder):
-                    os.makedirs(subfolder)
-                # Move the file into the corresponding subfolder
-                shutil.move(os.path.join(folder_image, file), os.path.join(subfolder, file))
+    """given a folder with images, create subfolders and move files into them based on pairs
+
+    Args:
+        sorce_path (torch.Tensor | np.ndarray | dict | list): the path should be outer_folder/models/list_of_images.png or outer_folder/models/image_folders/list_of_images.png
+
+    Returns:
+        None
+    """
+    pair_pattern = re.compile(r"(pair_\d+)")
+    for folder_image in sorted(Path(output_model).glob("*")):
+        # Create subfolders and move files into them based on pairs
+        files = [f for f in os.listdir(folder_image) if f.endswith(".jpg")]
+        for file in files:
+            match = pair_pattern.search(file)  # Search for the pair identifier
+            if match:
+                pair_id = match.group(1)  # Extract the pair identifier (e.g., "pair_n")
+                subfolder = os.path.join(folder_image, pair_id)
+            # Create subfolder if it doesn't exist
+            if not os.path.exists(subfolder):
+                os.makedirs(subfolder)
+            # Move the file into the corresponding subfolder
+            shutil.move(os.path.join(folder_image, file), os.path.join(subfolder, file))
 
 
-def create_images_folder(source_path, dest_path):
-    # the path should be outer_folder/models/list_of_images.png or outer_folder/models/image_folders/list_of_images.png
+def pair_images_in_folder(source_path, dest_path):
+    """pair the image having pair_n_0 and pair_n_1 name
+
+    Args:
+        sorce_path (torch.Tensor | np.ndarray | dict | list): the path should be source_path/models/list_of_images.png or outer_folder/models/image_folders/list_of_images.png
+
+    Returns:
+        None
+    """
+
     inputs = Path(source_path)
     if not inputs.exists():
         raise RuntimeError(f"{inputs} does not exist")
@@ -106,20 +122,27 @@ def create_images_folder(source_path, dest_path):
         model_name = os.path.split(dir)[1]
         model_folder = os.path.join(source_path, model_name)
 
+        # create output folder structure having same name
         output_folder_model = os.path.join(dest_path,model_name)
         
         # Case 1: input/models/list_of_images.png
         images = [f for f in os.listdir(model_folder) if f.endswith(".jpg")]
+
         start_pos_folder = 0
+
         if(len(images)) != 0:
-            #print("Path be like: outer_folder/models/list_of_images.png")
             for img in images:
+
                 path_image = os.path.join(dir, img)
                 end_pos_folder = img.find("_pair")
+
                 folder_name = img[start_pos_folder:end_pos_folder]
+
                 #input_dir/model/folder_image
                 output_folder_name = os.path.join(output_folder_model, folder_name)
+
                 os.makedirs(name = output_folder_name, exist_ok = True)
+
                 #input_dir/model/folder_image/image.png
                 shutil.copy(path_image, output_folder_name+"/"+img)
 

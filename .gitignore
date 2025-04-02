@@ -2,6 +2,8 @@
 .idea
 __pycache__
 model_weights
+.venv
+.vscode
 outputs_*
 *.egg-info/*
 build
@@ -9,5 +11,5 @@ build
 frames_compared/
 frames_matched/
 frames_source/
+frames_collected/
 example/
-ok/

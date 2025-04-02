@@ -1,9 +1,7 @@
 from pathlib import Path
 import cv2
-from skimage.metrics import structural_similarity as compare_ssim
 import os
 import argparse
-import numpy as np
 
 
 def remove_black_borders_auto(frame):
@@ -29,8 +27,15 @@ def remove_black_borders_auto(frame):
 
 
 def reading_video(file_path):
-    # Path to your video file
-    # Open the video file
+    """
+    Legge un video e mostra i frame uno alla volta.
+    
+    Parameters:
+        file_path (str): Percorso del file video.
+        
+    Returns:
+        None
+    """
     cap = cv2.VideoCapture(file_path)
     print(f"Capturing video in {file_path}")
     if not cap.isOpened():
@@ -40,8 +45,7 @@ def reading_video(file_path):
             ret, frame = cap.read()
             if not ret:
                 break
-            # print(f"Frame shape: {frame.shape}")
-            # Process the frame as needed (e.g., display or save)
+
             cv2.imshow("Frame", frame)
             cv2.waitKey(2)
 
@@ -49,20 +53,23 @@ def reading_video(file_path):
     cv2.destroyAllWindows()
 
 
-def choose_and_save_similar_frames(file_path, output_dir, remove_contours, skip_interval_long=20, skip_interval_small=3):
+def choose_and_save_similar_frames(file_path, output_dir, folder_name, remove_contours, skip_interval_long=20, skip_interval_small=3):
     """
     Allows manual selection of similar frame pairs to save for matching tasks.
     Enables skipping multiple frames at once.
 
     Parameters:
         file_path (str): Path to the input video file.
-        output_dir (str): Directory to save the frame pairs.
-        similarity_threshold (float): SSIM threshold above which frames are considered similar.
-        skip_interval (int): Number of frames to skip at once after pressing a key.
+        output_dir (str): Directory to save the frame pairs. 
+        skip_interval (int): Large Number of frames to skip at once after pressing a key.
+        skip_interval_small (int): Small Number of frames to skip at once after pressing a key.
     """
     # Create the output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
-    folder_name = os.path.split(output_dir)[-1]
+    #folder_name = os.path.split(output_dir)[-1]
+    print("Folder name: ")
+    #print(os.path.split(output_dir))
+    print(folder_name)
     
     # Open the video file
     cap = cv2.VideoCapture(file_path)
@@ -95,11 +102,7 @@ def choose_and_save_similar_frames(file_path, output_dir, remove_contours, skip_
         gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         
         if previous_frame is not None:
-            #Calculate SSIM between the current and the previous frame
-            #ssim_value, _ = compare_ssim(previous_frame, gray_frame, full=True) #TODO: requires sme image dimension between frames
-            
-            # Show the current and previous frame for user decision
-            #print(f"SSIM: {ssim_value:.2f}")
+
             cv2.imshow("Previous Frame", previous_frame_bgr)
             cv2.imshow("Current Frame", frame)
     
@@ -172,11 +175,13 @@ def parse_args():
     parser.add_argument(
         "--input",
         type=str,
-        default="D:/datasets/super_resolution_video/",
+        default="D:/dataset/superresolution/videos",
         help="path to either (1) dir with dirs with image pairs or (2) txt file with two image paths per line",
     )
-    parser.add_argument("--out_dir", type=Path, default="salient_frames", help="path where outputs are saved")
+    parser.add_argument("--out_dir", type=Path, default="frames_source", help="path where outputs are saved")
     parser.add_argument("--remove_contours", type=bool, default='True', help="Set True if you want to automatically black bourders.")
+    parser.add_argument("--name_folder", type=str, help="Set True if you want to automatically black bourders.")
+    parser.add_argument("--gt", type=bool, default=False)
 
     args = parser.parse_args()
     return args
@@ -185,17 +190,20 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
-    # avi and mp4 extensio involved
+    # avi and mp4 extension in dir
     avi_files = [f for f in os.listdir(args.input) if f.endswith('.avi') or f.endswith('.mp4')]
     avi_files_path = [os.path.join(args.input,f) for f in avi_files]
 
     for file in avi_files_path:
-        print(os.cpu_count())
         video_name = Path(file).stem
+        if args.name_folder:
+            video_name = args.name_folder
+        if args.gt:
+            name_model = "gt"
         reading_video(file)
-        choose_and_save_similar_frames(file,f"{args.out_dir}/{video_name}",args.remove_contours)
+        choose_and_save_similar_frames(file, f"{args.out_dir}/salient_frames_{video_name}/{name_model}", video_name, args.remove_contours)
     
-    folder_vect = [f for f in os.listdir(args.out_dir)]
-    folder_vect_path = [os.path.join(args.out_dir,f) for f in folder_vect]
+    #folder_vect = [f for f in os.listdir(args.out_dir)]
+    #folder_vect_path = [os.path.join(args.out_dir,f) for f in folder_vect]
 
-    print(folder_vect_path)
+    #print(folder_vect_path)
