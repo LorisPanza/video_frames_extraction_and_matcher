@@ -64,11 +64,9 @@ def choose_and_save_similar_frames(file_path, output_dir, folder_name, remove_co
         skip_interval (int): Large Number of frames to skip at once after pressing a key.
         skip_interval_small (int): Small Number of frames to skip at once after pressing a key.
     """
-    # Create the output directory if it doesn't exist
+    # Creating folder
     os.makedirs(output_dir, exist_ok=True)
-    #folder_name = os.path.split(output_dir)[-1]
     print("Folder name: ")
-    #print(os.path.split(output_dir))
     print(folder_name)
     
     # Open the video file
@@ -176,12 +174,11 @@ def parse_args():
         "--input",
         type=str,
         default="D:/dataset/superresolution/videos",
-        help="path to either (1) dir with dirs with image pairs or (2) txt file with two image paths per line",
+        help="path to either dir with dirs with videos",
     )
     parser.add_argument("--out_dir", type=Path, default="frames_source", help="path where outputs are saved")
     parser.add_argument("--remove_contours", type=bool, default='True', help="Set True if you want to automatically black bourders.")
-    parser.add_argument("--name_folder", type=str, help="Set True if you want to automatically black bourders.")
-    parser.add_argument("--gt", type=bool, default=False)
+    parser.add_argument("--inner_folder_name", type=str, default="frames", help = "subdirectory name")
 
     args = parser.parse_args()
     return args
@@ -195,15 +192,8 @@ if __name__ == "__main__":
     avi_files_path = [os.path.join(args.input,f) for f in avi_files]
 
     for file in avi_files_path:
-        video_name = Path(file).stem
-        if args.name_folder:
-            video_name = args.name_folder
-        if args.gt:
-            name_model = "gt"
-        reading_video(file)
-        choose_and_save_similar_frames(file, f"{args.out_dir}/salient_frames_{video_name}/{name_model}", video_name, args.remove_contours)
-    
-    #folder_vect = [f for f in os.listdir(args.out_dir)]
-    #folder_vect_path = [os.path.join(args.out_dir,f) for f in folder_vect]
 
-    #print(folder_vect_path)
+        subfix_frames = Path(file).stem
+        reading_video(file)
+        choose_and_save_similar_frames(file, f"{args.out_dir}/salient_frames_{subfix_frames}/{args.inner_folder_name}", subfix_frames, args.remove_contours)
+    
