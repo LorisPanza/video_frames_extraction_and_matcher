@@ -1,121 +1,16 @@
-"""
-This script performs image matching using a specified matcher model. It processes pairs of input images,
-detects keypoints, matches them, and performs RANSAC to find inliers. The results, including visualizations
-and metadata, are saved to the specified output directory.
-"""
-
 import torch
 import argparse
-
-import matplotlib
 import matplotlib.pyplot as plt
-from pathlib import Path
+from pathlib import Paths
 import os
 import numpy as np
 import re
 import cv2
-
-
 from matching.utils import get_image_pairs_paths, get_model_folders, load_torch_save, pair_images_in_folder
 from matching import get_matcher, available_models
 from matching.viz import plot_matches, plot_barplot_curr_folder
-from torchvision.models.segmentation import deeplabv3_resnet50
-from torchvision import transforms
+from utils_segmentation import load_segmentation_model, segment_image, filter_keypoints_by_mask, filter_matched_keypoints_by_mask
 
-
-
-
-def load_segmentation_model(device="cuda"):
-    """Load a pretrained DeepLabV3 model for segmentation."""
-    model = deeplabv3_resnet50(pretrained=True).to(device)
-    model.eval()
-    return model
-
-
-def filter_keypoints_by_mask(keypoints, mask):
-    """Filter keypoints that fall within the segmented region."""
-    filtered_kpts = []
-    deleted_kpts = []
-    for kp in keypoints:
-        x, y = int(kp[0]), int(kp[1])
-        if mask[y, x] == 4 :  # Assuming the ROI has nonzero values, 4 is the class boat
-            filtered_kpts.append(kp)
-        else: 
-            deleted_kpts.append(kp)
-    return np.array(filtered_kpts), np.array(deleted_kpts)
-
-
-def filter_matched_keypoints_by_mask(keypoints0, keypoints1, mask0, mask1):
-    """Filter keypoints that fall within the segmented region."""
-    filtered_kpts0 = []
-    filtered_kpts1 = []
-    deleted_kpts0 = []
-    deleted_kpts1 = []
-    for kp0, kp1 in zip(keypoints0, keypoints1):
-        x0, y0 = int(kp0[0]), int(kp0[1])
-        x1, y1 = int(kp1[0]), int(kp1[1])
-        if mask0[y0, x0] == 4 and mask1[y1, x1] == 4:  # Assuming the ROI has nonzero values, 4 is the class boat
-            filtered_kpts0.append(kp0)
-            filtered_kpts1.append(kp1)
-        else: 
-            deleted_kpts0.append(kp0)
-            deleted_kpts1.append(kp1)
-
-    return np.array(filtered_kpts0), np.array(filtered_kpts1), np.array(deleted_kpts0), np.array(deleted_kpts1)
-
-
-def overlay_mask(image, mask, alpha=0.5):
-    """Overlay segmentation mask on the original image."""
-    # Ensure image is a NumPy array
-    if isinstance(image, torch.Tensor):
-        image = image.permute(1, 2, 0).cpu().numpy()  # Convert from (C, H, W) to (H, W, C)
-        image = (image * 255).astype(np.uint8)  # Ensure uint8
-
-    # Convert mask to color (random colors for different classes)
-    mask_colored = cv2.applyColorMap((mask * 20).astype(np.uint8), cv2.COLORMAP_JET)
-
-    # Ensure mask has 3 channels
-    if len(mask_colored.shape) == 2:
-        mask_colored = cv2.cvtColor(mask_colored, cv2.COLOR_GRAY2BGR)
-
-    # Resize mask to match image size
-    mask_colored = cv2.resize(mask_colored, (image.shape[1], image.shape[0]))
-
-    # Blend original image and mask
-    blended = cv2.addWeighted(image, 1 - alpha, mask_colored, alpha, 0)
-
-    # Display the result
-    plt.figure(figsize=(10, 5))
-    plt.imshow(cv2.cvtColor(blended, cv2.COLOR_BGR2RGB))
-    plt.axis("off")
-    plt.title("Segmented Image Overlay")
-    plt.show()
-
-
-def segment_image(model, image,visualize=False, device="cuda"):
-    """Segment the image using the given model and return a binary mask."""
-    transform = transforms.Compose([
-        transforms.ToPILImage(),
-        transforms.Resize((image.shape[1], image.shape[2])),
-        transforms.ToTensor()
-    ])
-    
-    input_tensor = transform(image).unsqueeze(0).to(device)
-    with torch.no_grad():
-        output = model(input_tensor)["out"][0]
-    
-    mask = output.argmax(0).cpu().numpy()
-
-    # Print the unique values and their counts
-    unique, counts = np.unique(mask, return_counts=True)
-    print("Mask Distribution:")
-    for u, c in zip(unique, counts):
-        print(f"Class {u}: {c} pixels")
-    
-    if visualize:
-        overlay_mask(image, mask)
-
-    return mask
 
 
 def masking_result(result, mask0 = None, mask1 = None):

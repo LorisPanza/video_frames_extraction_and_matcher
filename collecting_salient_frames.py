@@ -6,13 +6,13 @@ import argparse
 
 def remove_black_borders_auto(frame):
     """
-    Rimuove automaticamente i bordi neri da un frame, rilevando contorni validi.
+    Remove black contours from the frames capture.
     
     Parameters:
-        frame (numpy.ndarray): Il frame da processare.
+        frame (numpy.ndarray): Frame to process.
         
     Returns:
-        numpy.ndarray: Frame ritagliato.
+        numpy.ndarray: Frame without black borders.
     """
     assert frame is not None
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -28,10 +28,10 @@ def remove_black_borders_auto(frame):
 
 def reading_video(file_path):
     """
-    Legge un video e mostra i frame uno alla volta.
+    Play a video and allow to save pair of subsequent frames.
     
     Parameters:
-        file_path (str): Percorso del file video.
+        file_path (str): Video path.
         
     Returns:
         None
