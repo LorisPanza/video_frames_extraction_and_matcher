@@ -5,3 +5,8 @@ model_weights
 outputs_*
 *.egg-info/*
 build
+*.[oa]
+frames_compared/**
+frmaes_matched/** 
+freames_source/**
+esample/**

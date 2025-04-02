@@ -48,9 +48,10 @@ def plot_matches(
 
     viz2d.plot_matches(result_dict["inlier_kpts0"], result_dict["inlier_kpts1"], color="lime", lw=0.2)
 
+    inlier_ratio = len(result_dict['inlier_kpts0'])/len(result_dict['matched_kpts1']) if len(result_dict['matched_kpts1']) > 0 else 0
     viz2d.add_text(
         0,
-        f"{len(result_dict['inlier_kpts0'])} inliers/{len(result_dict['matched_kpts1'])} matches\n({len(result_dict['inlier_kpts0'])/len(result_dict['matched_kpts1']):0.2f} inlier ratio)",
+        f"{len(result_dict['inlier_kpts0'])} inliers/{inlier_ratio:0.2f} inlier ratio)",
         fs=17,
         lwidth=2,
     )
@@ -152,3 +153,29 @@ def stich(img0: np.ndarray | torch.Tensor, img1: np.ndarray | torch.Tensor, resu
     stiched_imgs[translation[1] : translation[1] + h1, translation[0] : translation[0] + w1] = img1
 
     return stiched_imgs
+
+
+
+def plot_barplot_curr_folder(arr_ratio, arr_names, model_title):
+    mean_ratio_arr = np.mean(arr_ratio)
+    # Check if the number of names matches the array size
+    if len(arr_ratio) != len(arr_names):
+        raise ValueError("The number of bar names must match the length of the ratio array.")
+
+    # Create the bar plot
+    plt.figure(figsize=(12, 8))
+    plt.bar(arr_names, arr_ratio, color="skyblue", label="Ratios")
+    plt.axhline(mean_ratio_arr, color="red", linestyle="--", label=f"Mean Ratio: {mean_ratio_arr:.2f}")
+
+    # Rotating x labels
+    plt.xticks(rotation=90)
+
+
+    # Add labels and title
+    #plt.xlabel("Image pairs")
+    plt.ylabel("Inlier ratio")
+    plt.title(f"Inlier ratio: {model_title}")
+    plt.legend()
+
+    # Display the plot
+    plt.show()

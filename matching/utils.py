@@ -6,6 +6,11 @@ import torchvision.transforms as tfm
 import os, contextlib
 from yacs.config import CfgNode as CN
 import sys
+import cv2
+from skimage.metrics import structural_similarity as compare_ssim
+import shutil, re
+
+
 
 logger = logging.getLogger()
 logger.setLevel(31)  # Avoid printing useless low-level logs
@@ -38,6 +43,7 @@ def get_image_pairs_paths(inputs):
                 raise ValueError(f"{pair} should be a pair of paths")
         return [(Path(path0.strip()), Path(path1.strip())) for path0, path1 in pairs_of_paths]
     else:
+<<<<<<< HEAD
         inner_files = sorted(Path(inputs).glob("*"))
         if len(inner_files) == 2 and inner_files[0].is_file() and inner_files[1].is_file():
             # --input is a dir with a pair of images
@@ -49,6 +55,92 @@ def get_image_pairs_paths(inputs):
                 if len(pair) != 2:
                     raise ValueError(f"{pair} should be a pair of paths")
             return pairs_of_paths
+=======
+        pair_dirs = sorted(Path(inputs).glob("*"))
+        #print(pair_dirs) # first level (3 trees, BOSS)
+        pairs_of_paths = [list(pair_dir.glob("*")) for pair_dir in pair_dirs]
+        #print(pairs_of_paths) # second level (list of 2 images for each folder)
+        for pair in pairs_of_paths:
+            if len(pair) != 2:
+                raise RuntimeError(f"{pair} should be a pair of paths")
+    return pairs_of_paths, pair_dirs
+
+
+def get_model_folders(inputs):
+    inputs = Path(inputs)
+    if not inputs.exists():
+        raise RuntimeError(f"{inputs} does not exist")
+    dirs = sorted(Path(inputs).glob("*"))
+    return dirs
+
+def create_paired_folder(output_model):
+        pair_pattern = re.compile(r"(pair_\d+)")
+        for folder_image in sorted(Path(output_model).glob("*")):
+            # Create subfolders and move files into them based on pairs
+            files = [f for f in os.listdir(folder_image) if f.endswith(".jpg")]
+            for file in files:
+                match = pair_pattern.search(file)  # Search for the pair identifier
+                if match:
+                    pair_id = match.group(1)  # Extract the pair identifier (e.g., "pair_1")
+                    subfolder = os.path.join(folder_image, pair_id)
+                # Create subfolder if it doesn't exist
+                if not os.path.exists(subfolder):
+                    os.makedirs(subfolder)
+                # Move the file into the corresponding subfolder
+                shutil.move(os.path.join(folder_image, file), os.path.join(subfolder, file))
+
+
+def create_images_folder(source_path, dest_path):
+    # the path should be outer_folder/models/list_of_images.png or outer_folder/models/image_folders/list_of_images.png
+    inputs = Path(source_path)
+    if not inputs.exists():
+        raise RuntimeError(f"{inputs} does not exist")
+    
+    # dirs containt the models name
+    dirs = sorted(Path(inputs).glob("*"))
+
+    # for each single model (hat, pipeline, gt)
+    for dir in dirs:
+        print(f"Actual dir: {dir}")
+        # input_dir/model
+        model_name = os.path.split(dir)[1]
+        model_folder = os.path.join(source_path, model_name)
+
+        output_folder_model = os.path.join(dest_path,model_name)
+        
+        # Case 1: input/models/list_of_images.png
+        images = [f for f in os.listdir(model_folder) if f.endswith(".jpg")]
+        start_pos_folder = 0
+        if(len(images)) != 0:
+            #print("Path be like: outer_folder/models/list_of_images.png")
+            for img in images:
+                path_image = os.path.join(dir, img)
+                end_pos_folder = img.find("_pair")
+                folder_name = img[start_pos_folder:end_pos_folder]
+                #input_dir/model/folder_image
+                output_folder_name = os.path.join(output_folder_model, folder_name)
+                os.makedirs(name = output_folder_name, exist_ok = True)
+                #input_dir/model/folder_image/image.png
+                shutil.copy(path_image, output_folder_name+"/"+img)
+
+        # Case 2: outer_folder/models/image_folders/list_of_images.png
+        else:
+            #print("Path be like: Outer_folder/models/image_folders/list_of_images.png")
+            folders = [f for f in os.listdir(model_folder)]
+            for folder in folders:
+                path_folder = os.path.join(dir,folder)
+                output_folder_name = os.path.join(output_folder_model, folder)
+                os.makedirs(name = output_folder_name, exist_ok = True)
+                shutil.copytree(path_folder, output_folder_name , dirs_exist_ok=True)
+        
+        create_paired_folder(output_folder_model)
+
+
+def load_torch_save(inputs):
+    torch_files = [f for f in os.listdir(inputs) if f.endswith('.torch')]
+    torch_files_path = [os.path.join(inputs, f) for f in torch_files]
+    return torch_files_path
+>>>>>>> 6aa7887 (introducing salient frames extractor and code to compare the pairs and extract statistics)
 
 
 def to_numpy(x: torch.Tensor | np.ndarray | dict | list) -> np.ndarray:
@@ -194,6 +286,7 @@ def add_to_path(path: str | Path, insert=None) -> None:
     else:
         sys.path.insert(insert, path)
 
+<<<<<<< HEAD
 def get_default_device():
     device = "cpu"
 
@@ -204,3 +297,7 @@ def get_default_device():
         device = "cuda"
 
     return device
+=======
+
+
+>>>>>>> 6aa7887 (introducing salient frames extractor and code to compare the pairs and extract statistics)
