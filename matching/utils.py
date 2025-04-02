@@ -18,51 +18,13 @@ logger.setLevel(31)  # Avoid printing useless low-level logs
 
 def get_image_pairs_paths(inputs):
 
-    if len(inputs) > 2:
-        raise ValueError(f"--input should be one or two paths, not {len(inputs)} paths like {inputs}")
-
-    if len(inputs) == 2:
-        # --input is two paths of images
-        if not inputs[0].is_file() or not inputs[1].is_file():
-            raise ValueError(f"If --input is two paths, it should be two images, not {inputs}")
-        return [inputs]
-
-    assert len(inputs) == 1
-    inputs = Path(inputs[0])
-
-    if not inputs.exists():
-        raise ValueError(f"{inputs} does not exist")
-
-    if inputs.is_file():
-        # --input is a file with pairs of images paths
-        with open(inputs) as file:
-            lines = file.read().splitlines()
-        pairs_of_paths = [line.strip().split(" ") for line in lines]
-        for pair in pairs_of_paths:
-            if len(pair) != 2:
-                raise ValueError(f"{pair} should be a pair of paths")
-        return [(Path(path0.strip()), Path(path1.strip())) for path0, path1 in pairs_of_paths]
-    else:
-<<<<<<< HEAD
-        inner_files = sorted(Path(inputs).glob("*"))
-        if len(inner_files) == 2 and inner_files[0].is_file() and inner_files[1].is_file():
-            # --input is a dir with a pair of images
-            return [inner_files]
-        else:
-            # --input is a dir of subdirs, where each subdir has a pair of images
-            pairs_of_paths = [list(pair_dir.glob("*")) for pair_dir in inner_files]
-            for pair in pairs_of_paths:
-                if len(pair) != 2:
-                    raise ValueError(f"{pair} should be a pair of paths")
-            return pairs_of_paths
-=======
-        pair_dirs = sorted(Path(inputs).glob("*"))
-        #print(pair_dirs) # first level (3 trees, BOSS)
-        pairs_of_paths = [list(pair_dir.glob("*")) for pair_dir in pair_dirs]
-        #print(pairs_of_paths) # second level (list of 2 images for each folder)
-        for pair in pairs_of_paths:
-            if len(pair) != 2:
-                raise RuntimeError(f"{pair} should be a pair of paths")
+    pair_dirs = sorted(Path(inputs).glob("*"))
+    #print(pair_dirs) # first level (3 trees, BOSS)
+    pairs_of_paths = [list(pair_dir.glob("*")) for pair_dir in pair_dirs]
+    #print(pairs_of_paths) # second level (list of 2 images for each folder)
+    for pair in pairs_of_paths:
+        if len(pair) != 2:
+            raise RuntimeError(f"{pair} should be a pair of paths")
     return pairs_of_paths, pair_dirs
 
 
@@ -163,7 +125,6 @@ def load_torch_save(inputs):
     torch_files = [f for f in os.listdir(inputs) if f.endswith('.torch')]
     torch_files_path = [os.path.join(inputs, f) for f in torch_files]
     return torch_files_path
->>>>>>> 6aa7887 (introducing salient frames extractor and code to compare the pairs and extract statistics)
 
 
 def to_numpy(x: torch.Tensor | np.ndarray | dict | list) -> np.ndarray:
@@ -309,7 +270,6 @@ def add_to_path(path: str | Path, insert=None) -> None:
     else:
         sys.path.insert(insert, path)
 
-<<<<<<< HEAD
 def get_default_device():
     device = "cpu"
 
@@ -320,7 +280,3 @@ def get_default_device():
         device = "cuda"
 
     return device
-=======
-
-
->>>>>>> 6aa7887 (introducing salient frames extractor and code to compare the pairs and extract statistics)

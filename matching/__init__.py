@@ -5,7 +5,7 @@ warnings due to unused modules.
 """
 
 from pathlib import Path
-from .utils import supress_stdout, add_to_path, get_default_device
+from .utils import supress_stdout, add_to_path
 from .im_models.base_matcher import BaseMatcher
 
 # add viz2d from lightglue to namespace - thanks lightglue!

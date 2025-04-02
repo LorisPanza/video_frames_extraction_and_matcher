@@ -6,39 +6,25 @@ and metadata, are saved to the specified output directory.
 
 import torch
 import argparse
-<<<<<<< HEAD
-=======
+
 import matplotlib
 import matplotlib.pyplot as plt
->>>>>>> 1de3ec5 (introducing extractor frames)
 from pathlib import Path
 import os
 import numpy as np
 import re
 import cv2
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-from matching.utils import get_image_pairs_paths, get_default_device
-=======
-from matching.utils import get_image_pairs_paths, get_model_folders, load_torch_save, create_images_folder
->>>>>>> 6aa7887 (introducing salient frames extractor and code to compare the pairs and extract statistics)
-=======
+
 from matching.utils import get_image_pairs_paths, get_model_folders, load_torch_save, pair_images_in_folder
->>>>>>> 1de3ec5 (introducing extractor frames)
 from matching import get_matcher, available_models
 from matching.viz import plot_matches, plot_barplot_curr_folder
 from torchvision.models.segmentation import deeplabv3_resnet50
 from torchvision import transforms
 
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-# This is to be able to use matplotlib also without a GUI
-#if not hasattr(sys, "ps1"):
-#    matplotlib.use("Agg")
-=======
+
+
 def load_segmentation_model(device="cuda"):
     """Load a pretrained DeepLabV3 model for segmentation."""
     model = deeplabv3_resnet50(pretrained=True).to(device)
@@ -185,9 +171,6 @@ def masking_result(result, mask0 = None, mask1 = None):
         return filtered_result
     else:
         return result
->>>>>>> 1de3ec5 (introducing extractor frames)
-
->>>>>>> 6aa7887 (introducing salient frames extractor and code to compare the pairs and extract statistics)
 
 def main(args):
     image_size = [args.im_size, args.im_size]
@@ -406,7 +389,7 @@ def parse_args():
     # Hyperparameters shared by all methods:
     parser.add_argument("--im_size", type=int, default=512, help="resize img to im_size x im_size")
     parser.add_argument("--n_kpts", type=int, default=2048, help="max num keypoints")
-    parser.add_argument("--device", type=str, default=get_default_device(), choices=["cpu", "cuda"])
+    parser.add_argument("--device", type=str, default="cuda", choices=["cpu", "cuda"])
     parser.add_argument("--no_viz", action="store_true", help="avoid saving visualizations")
 
     parser.add_argument(
