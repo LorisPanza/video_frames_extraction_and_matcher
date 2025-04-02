@@ -8,8 +8,7 @@ outputs_*
 *.egg-info/*
 build
 *.[oa]
-frames_compared/*/
-frames_matched/*/
-frames_source/*/
-frames_collected/*/
-example/*/
+frames_compared/
+frames_matched/
+frames_source/
+frames_collected/
