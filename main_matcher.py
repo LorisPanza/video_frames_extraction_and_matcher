@@ -331,12 +331,14 @@ def main(args):
         #args in to consider the input folder, args out to write the ouput
         assert not(args.input is None and args.out is None)
         seg_model = load_segmentation_model(device=args.device)
+        
         with open('pascalVOC.json') as f:
             if(args.mask_type in range(1,21)):
                 VOC_classes = json.load(f)
                 class_chosen = VOC_classes[str(args.mask_type)]
                 print(f"Class to be masked: {class_chosen}")
             f.close()
+
         extract_keypoints(args, args.mask_type, seg_model)
 
         
