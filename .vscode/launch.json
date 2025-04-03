@@ -12,9 +12,10 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "args": [
-                "--input", "frames_matched/test_pipeline_matched",
-                "--out_dir", "frames_compared/test_pipeline",
+                "--input", "frames_matched/ship_hat_sr_matched",
+                "--out_dir", "frames_compared/ship_hat_sr_test",
                 "--extract_keypoints", 
+                "--mask_type", "4"
             ]
         }
     ]

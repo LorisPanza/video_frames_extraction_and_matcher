@@ -91,7 +91,7 @@ def filter_matched_keypoints_by_mask(keypoints0, keypoints1, mask0, mask1, mask_
     return np.array(filtered_kpts0), np.array(filtered_kpts1), np.array(deleted_kpts0), np.array(deleted_kpts1)
 
 
-def overlay_mask(image, mask, alpha=0.5):
+def overlay_mask(image, mask, path=None, alpha=0.5):
     """
     Overlay the segmentation mask on top of the original image for visualization.
     
@@ -126,10 +126,14 @@ def overlay_mask(image, mask, alpha=0.5):
     plt.imshow(cv2.cvtColor(blended, cv2.COLOR_BGR2RGB))
     plt.axis("off")
     plt.title("Segmented Image Overlay")
-    plt.show()
+    if path is not None:
+        print("image saved at: ", path)
+        plt.savefig(path, bbox_inches='tight', pad_inches=0)
+    else:
+        plt.show()
 
 
-def segment_image(model, image, visualize=False, device="cuda"):
+def segment_image(model, image, viz_path=None, device="cuda"):
     """
     Segment the input image using the given segmentation model and return a binary mask.
     
@@ -166,7 +170,7 @@ def segment_image(model, image, visualize=False, device="cuda"):
     #    print(f"Class {u}: {c} pixels")
     
     # If visualize is True, overlay the mask on the image.
-    if visualize:
-        overlay_mask(image, mask)
+    
+    overlay_mask(image, mask, viz_path)
 
     return mask

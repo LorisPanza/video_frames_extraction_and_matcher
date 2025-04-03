@@ -218,6 +218,12 @@ def extract_keypoints(args, mask_number, segmentation_model):
                 # Get the image names (without extensions)
                 image_0_name = Path(img0_path).stem
                 img_1_name = Path(img1_path).stem
+
+                # Create the output folder for the current subfolder and image pair
+                curr_path_folder_image = os.path.join(out_model_path, subfolder)
+                os.makedirs(name=curr_path_folder_image, exist_ok=True)
+                viz_path_matching = os.path.join(curr_path_folder_image, f"output_{subfolder}_{image_0_name}_{img_1_name}_matches.jpg")
+
                 
                 # Load the images (resize them to the specified size)
                 image0 = matcher.load_image(img0_path, resize=image_size)
@@ -226,8 +232,10 @@ def extract_keypoints(args, mask_number, segmentation_model):
                 # If processing the 'gt' folder, segment both images and save the masks
                 if model_name == "gt":
                     gt_flag = True
-                    mask0 = segment_image(segmentation_model, image0, False, args.device)
-                    mask1 = segment_image(segmentation_model, image1, False, args.device)
+                    viz_path_masking_0 = os.path.join(curr_path_folder_image, f"output_{subfolder}_{image_0_name}_{img_1_name}_mask_0_gt.jpg")
+                    viz_path_masking_1 = os.path.join(curr_path_folder_image, f"output_{subfolder}_{image_0_name}_{img_1_name}_mask_1_gt.jpg")
+                    mask0 = segment_image(segmentation_model, image0, viz_path_masking_0, args.device)
+                    mask1 = segment_image(segmentation_model, image1, viz_path_masking_1, args.device)
                     pair_dict[pair_folder_name] = (mask0, mask1)
                     subfolder_mask[subfolder] = pair_dict
 
@@ -235,6 +243,10 @@ def extract_keypoints(args, mask_number, segmentation_model):
                 elif(gt_flag):
                     mask0 = subfolder_mask[subfolder][pair_folder_name][0]
                     mask1 = subfolder_mask[subfolder][pair_folder_name][1]
+                    viz_path_masking_0 = os.path.join(curr_path_folder_image, f"output_{subfolder}_{image_0_name}_{img_1_name}_mask_0.jpg")
+                    viz_path_masking_1 = os.path.join(curr_path_folder_image, f"output_{subfolder}_{image_0_name}_{img_1_name}_mask_1.jpg")
+                    overlay_mask(image0, mask0, viz_path_masking_0)
+                    overlay_mask(image1, mask1, viz_path_masking_1)
 
 
                 # Perform keypoint matching between the two images
@@ -246,15 +258,10 @@ def extract_keypoints(args, mask_number, segmentation_model):
                 # Print the paths and the number of inliers found after RANSAC
                 out_str = f"Paths: {str(img0_path), str(img1_path)}. \n Found {filtered_result['num_inliers']} inliers after RANSAC. "
 
-                # Create the output folder for the current subfolder and image pair
-                curr_path_folder_image = os.path.join(out_model_path, subfolder)
-                os.makedirs(name=curr_path_folder_image, exist_ok=True)
-
                 # If visualization is enabled and there are inliers, save the visualization
                 if not args.no_viz and filtered_result["num_inliers"] != 0:
-                    viz_path = os.path.join(curr_path_folder_image, f"output_{subfolder}_{image_0_name}_{img_1_name}_matches.jpg")
-                    plot_matches(image0, image1, filtered_result, save_path=viz_path)
-                    out_str += f"Viz saved in {viz_path}. "
+                    plot_matches(image0, image1, filtered_result, save_path=viz_path_matching)
+                    out_str += f"Viz saved in {viz_path_matching}. "
 
                 # Add additional information to the filtered result (e.g., paths, matcher type, image size)
                 filtered_result["img0_path"] = img0_path

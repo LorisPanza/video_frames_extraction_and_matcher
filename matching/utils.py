@@ -61,63 +61,74 @@ def create_paired_folder(output_model):
 
 
 def pair_images_in_folder(source_path, dest_path):
-    """pair the image having pair_n_0 and pair_n_1 name
+    """Pairs images that have the naming pattern 'pair_n_0' and 'pair_n_1' and organizes them into folders.
 
     Args:
-        sorce_path (torch.Tensor | np.ndarray | dict | list): the path should be source_path/models/list_of_images.png or outer_folder/models/image_folders/list_of_images.png
+        source_path (str): The root directory containing image models or subdirectories.
+        dest_path (str): The destination directory where the organized images will be stored.
 
     Returns:
         None
     """
 
+    # Convert source_path to a Path object for easy handling
     inputs = Path(source_path)
+
+    # Check if the source path exists, raise an error if it does not
     if not inputs.exists():
         raise RuntimeError(f"{inputs} does not exist")
     
-    # dirs containt the models name
+    # Get a sorted list of all subdirectories in the source path (assumed to be model names)
     dirs = sorted(Path(inputs).glob("*"))
 
-    # for each single model (hat, pipeline, gt)
+    # Iterate over each model directory (e.g., 'hat', 'pipeline', 'gt')
     for dir in dirs:
-        print(f"Actual dir: {dir}")
-        # input_dir/model
+        print(f"Processing directory: {dir}")
+
+        # Extract the model name from the directory path
         model_name = os.path.split(dir)[1]
         model_folder = os.path.join(source_path, model_name)
 
-        # create output folder structure having same name
-        output_folder_model = os.path.join(dest_path,model_name)
+        # Create an equivalent folder structure in the destination path
+        output_folder_model = os.path.join(dest_path, model_name)
         
-        # Case 1: input/models/list_of_images.png
+        # Case 1: If the directory contains individual image files (not subfolders)
         images = [f for f in os.listdir(model_folder) if f.endswith(".jpg")]
 
-        start_pos_folder = 0
+        start_pos_folder = 0  # Start index for extracting folder name from image filename
 
-        if(len(images)) != 0:
+        # If there are images in the directory
+        if len(images) != 0:
             for img in images:
-
+                # Get the full path of the image
                 path_image = os.path.join(dir, img)
-                end_pos_folder = img.find("_pair")
 
+                # Extract the folder name from the image filename (before '_pair')
+                end_pos_folder = img.find("_pair")
                 folder_name = img[start_pos_folder:end_pos_folder]
 
-                #input_dir/model/folder_image
+                # Create a subfolder under the model folder in the destination directory
                 output_folder_name = os.path.join(output_folder_model, folder_name)
+                os.makedirs(name=output_folder_name, exist_ok=True)
 
-                os.makedirs(name = output_folder_name, exist_ok = True)
+                # Copy the image to its respective folder
+                shutil.copy(path_image, os.path.join(output_folder_name, img))
 
-                #input_dir/model/folder_image/image.png
-                shutil.copy(path_image, output_folder_name+"/"+img)
-
-        # Case 2: outer_folder/models/image_folders/list_of_images.png
+        # Case 2: If the directory contains subdirectories instead of individual images
         else:
-            #print("Path be like: Outer_folder/models/image_folders/list_of_images.png")
+            # Get a list of all subdirectories
             folders = [f for f in os.listdir(model_folder)]
             for folder in folders:
-                path_folder = os.path.join(dir,folder)
+                path_folder = os.path.join(dir, folder)
                 output_folder_name = os.path.join(output_folder_model, folder)
-                os.makedirs(name = output_folder_name, exist_ok = True)
-                shutil.copytree(path_folder, output_folder_name , dirs_exist_ok=True)
+
+                # Create the corresponding subdirectory in the destination
+                os.makedirs(name=output_folder_name, exist_ok=True)
+
+                # Copy the entire subdirectory (including all its contents) to the destination
+                shutil.copytree(path_folder, output_folder_name, dirs_exist_ok=True)
         
+        # Call another function (not defined in this code) to further process the paired images
         create_paired_folder(output_folder_model)
 
 
