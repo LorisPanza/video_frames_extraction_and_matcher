@@ -183,7 +183,6 @@ def extract_keypoints(args, mask_number, segmentation_model):
 
     image_size = [args.im_size, args.im_size]  # Set the image size for resizing images
     subfolder_mask = {}  # Dictionary to store masks for each subfolder
-    pair_dict = {}  # Dictionary to store image pair masks
     gt_flag = False  # Flag to track if we are processing the 'gt' folder
 
     # Ensure the output directory exists
@@ -236,17 +235,17 @@ def extract_keypoints(args, mask_number, segmentation_model):
                     viz_path_masking_1 = os.path.join(curr_path_folder_image, f"output_{subfolder}_{image_0_name}_{img_1_name}_mask_1_gt.jpg")
                     mask0 = segment_image(segmentation_model, image0, viz_path_masking_0, args.device)
                     mask1 = segment_image(segmentation_model, image1, viz_path_masking_1, args.device)
-                    pair_dict[pair_folder_name] = (mask0, mask1)
-                    subfolder_mask[subfolder] = pair_dict
+                    subfolder_mask[f"{subfolder}_{pair_folder_name}"] = (mask0, mask1)
 
                 # If we are processing other models and 'gt' flag is set, use the 'gt' masks for filtering
                 elif(gt_flag):
-                    mask0 = subfolder_mask[subfolder][pair_folder_name][0]
-                    mask1 = subfolder_mask[subfolder][pair_folder_name][1]
+                    print(f"Taking mask from {subfolder} and {pair_folder_name}")
+                    mask0 = subfolder_mask[f"{subfolder}_{pair_folder_name}"][0]
+                    mask1 = subfolder_mask[f"{subfolder}_{pair_folder_name}"][1]
                     viz_path_masking_0 = os.path.join(curr_path_folder_image, f"output_{subfolder}_{image_0_name}_{img_1_name}_mask_0.jpg")
                     viz_path_masking_1 = os.path.join(curr_path_folder_image, f"output_{subfolder}_{image_0_name}_{img_1_name}_mask_1.jpg")
-                    overlay_mask(image0, mask0, viz_path_masking_0)
-                    overlay_mask(image1, mask1, viz_path_masking_1)
+                    #overlay_mask(image0, mask0, viz_path_masking_0)
+                    #overlay_mask(image1, mask1, viz_path_masking_1)
 
 
                 # Perform keypoint matching between the two images
