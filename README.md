@@ -36,8 +36,7 @@ This Python utility helps you **manually extract and save frame pairs** from vid
 2. **Automatic Folder Organization**:
    - After frame selection, the script automatically scans the output directory, detects saved pairs, and organizes them into subfolders named after the prefix (`video_name`) of the images.
 
-
-
+--- 
 ## 🔧 Usage
 
 ```bash
@@ -52,9 +51,20 @@ python main.py \
     --images_to_be_paired True
 ```
 ---
+## 🗂️ Folder structure
+- Suppose you processed videos from videos/ and saved frames in output_folder/, the structure might look like:
+```
+output_folder/
+├── salient_name_video/
+│   └── inner_folder_name/
+│       └── pair0 
+│          ├── video1_pair_0_1.jpg
+│          ├── video1_pair_0_2.jpg
+│       └── pair 1
+│          ├── ...
 
-
-    
+```
+---
 ### Acknowledgements
   
 Special thanks to the authors of the respective works that are included in this repo (see their papers above). Additional thanks to [@GrumpyZhou](https://github.com/GrumpyZhou) for developing and maintaining the [Image Matching Toolbox](https://github.com/GrumpyZhou/image-matching-toolbox/tree/main), which we have wrapped in this repo, and the [maintainers](https://github.com/kornia/kornia?tab=readme-ov-file#community) of [Kornia](https://github.com/kornia/kornia).
