@@ -1,16 +1,16 @@
-# 🎞️ Video Frame Pair Extraction Tool
+# 🎞️ Video Frame Pairing Tool
 
-> A handy Python tool for extracting **salient frame pairs** from videos, with manual selection and border removal features. Perfect for training data creation in tasks like **frame matching**, **super-resolution**, and **temporal alignment**.
+This Python utility helps you **manually extract and save frame pairs** from videos for use in tasks such as **image matching**, **super-resolution**, or **temporal consistency training**. It also provides a post-processing function to **automatically organize the saved pairs** into structured folders.
 
 ---
 
-## 🚀 Features
+## 📌 Features
 
-- ✅ **Interactive frame selection**: View and save meaningful pairs with keyboard controls.
-- ✂️ **Automatic black border removal**.
-- ⏩ **Frame skipping**: Skip frames quickly with custom intervals.
-- 🎥 Supports `.avi` and `.mp4` video formats.
-- 📁 Automatically organizes output in structured folders.
+- 🚀 Manually browse through video frames.
+- 🖼️ Save pairs of visually similar frames by pressing a key.
+- 🧼 Optional automatic removal of black borders from each frame.
+- ⏩ Skip frames quickly (long and short intervals).
+- 🗂️ Automatically organize saved frames into structured folders based on their naming pattern.
 
 ---
 
@@ -22,6 +22,22 @@
 
 ---
 
+## 🧠 How It Works
+
+1. **Video Browsing**:
+   - The user is shown a current frame and another one a few frames ahead (configurable).
+   - Press:
+     - `s`: Save the current pair.
+     - `x`: Skip many frames.
+     - `c`: Skip a few frames.
+     - `z`: Exit the video.
+   - Pairs are saved as `video_name_pair_N_1.jpg` and `video_name_pair_N_2.jpg`.
+
+2. **Automatic Folder Organization**:
+   - After frame selection, the script automatically scans the output directory, detects saved pairs, and organizes them into subfolders named after the prefix (`video_name`) of the images.
+
+
+
 ## 🔧 Usage
 
 ```bash
@@ -32,19 +48,9 @@ python main.py \
     --inner_folder_name frames \
     --frames_difference 1 \
     --skip_interval_long 20 \
-    --skip_interval_small 3
+    --skip_interval_small 3 \
+    --images_to_be_paired True
 ```
----
-
-## 🧠 How It Works
-
-The script reads a video, skips forward by a user-defined number of frames (`frames_difference`), and allows you to decide if the current frame and the future one form a useful pair. You can then:
-
-- Press `s` to **save the frame pair**.
-- Press `x` to **skip many frames** (long jump).
-- Press `c` to **skip a few frames** (short jump).
-- Press `z` to **stop the session**.
-
 ---
 
 
