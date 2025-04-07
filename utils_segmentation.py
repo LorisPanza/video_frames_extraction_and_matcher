@@ -106,6 +106,7 @@ def overlay_mask(image, mask, path=None, alpha=0.5):
     # Ensure the image is a NumPy array. If it's a PyTorch tensor, convert it to NumPy.
     if isinstance(image, torch.Tensor):
         image = image.permute(1, 2, 0).cpu().numpy()  # Convert from (C, H, W) to (H, W, C).
+        
         image = (image * 255).astype(np.uint8)  # Ensure the image is in uint8 format.
 
     # Convert the mask into a colorized version for visualization.
@@ -120,6 +121,7 @@ def overlay_mask(image, mask, path=None, alpha=0.5):
 
     # Blend the original image and the mask with the specified alpha value.
     blended = cv2.addWeighted(image, 1 - alpha, mask_colored, alpha, 0)
+    
 
     # Display the result.
     plt.figure(figsize=(10, 5))
@@ -127,7 +129,7 @@ def overlay_mask(image, mask, path=None, alpha=0.5):
     plt.axis("off")
     plt.title("Segmented Image Overlay")
     if path is not None:
-        print("image saved at: ", path)
+        #print("image saved at: ", path)
         plt.savefig(path, bbox_inches='tight', pad_inches=0)
     else:
         plt.show()

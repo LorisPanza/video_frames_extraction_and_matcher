@@ -168,7 +168,7 @@ def robustness_analysis(out_dir, plot=True):
         print(f"Mean array {key}: {val}")
 
 
-def extract_keypoints(args, mask_number, segmentation_model):
+def extract_keypoints(args, mask_number, segmentation_model, gt_folder=None):
     """
     Extract keypoints from image pairs, apply segmentation masks, and save the results.
 
@@ -193,6 +193,19 @@ def extract_keypoints(args, mask_number, segmentation_model):
 
     # Get the folders in the input directory (e.g., 'gt', 'hat', 'lq')
     model_folders = get_model_folders(args.input)
+    model_names = [os.path.split(single_model_path)[1] for single_model_path in model_folders]
+
+    assert gt_folder in model_names or gt_folder == None
+    
+    if(gt_folder is not None):
+        # If a gt_folder is specified, remove it from the list of model folders
+        gt_folder_path = os.path.join(args.input, gt_folder)
+        print(f"GT folder path: {gt_folder_path}")
+        print("Model folders before removing gt folder: ", model_folders)
+        model_folders.remove(Path(gt_folder_path))
+        print(f"Removing {gt_folder_path} from the list of folders to be processed.")
+        model_folders.insert(0, gt_folder_path)  # Add the gt_folder to the beginning of the list
+        print("Model folders after removing gt folder and put it as first: ", model_folders)
 
     for model in model_folders:
         # Extract model name and set up the output folder
@@ -222,6 +235,8 @@ def extract_keypoints(args, mask_number, segmentation_model):
                 curr_path_folder_image = os.path.join(out_model_path, subfolder)
                 os.makedirs(name=curr_path_folder_image, exist_ok=True)
                 viz_path_matching = os.path.join(curr_path_folder_image, f"output_{subfolder}_{image_0_name}_{img_1_name}_matches.jpg")
+                viz_path_masking_0 = os.path.join(curr_path_folder_image, f"output_{subfolder}_{image_0_name}_{img_1_name}_mask_0.jpg")
+                viz_path_masking_1 = os.path.join(curr_path_folder_image, f"output_{subfolder}_{image_0_name}_{img_1_name}_mask_1.jpg")
 
                 
                 # Load the images (resize them to the specified size)
@@ -229,24 +244,28 @@ def extract_keypoints(args, mask_number, segmentation_model):
                 image1 = matcher.load_image(img1_path, resize=image_size)
 
                 # If processing the 'gt' folder, segment both images and save the masks
-                if model_name == "gt":
+                if model_name == gt_folder:
                     gt_flag = True
-                    viz_path_masking_0 = os.path.join(curr_path_folder_image, f"output_{subfolder}_{image_0_name}_{img_1_name}_mask_0_gt.jpg")
-                    viz_path_masking_1 = os.path.join(curr_path_folder_image, f"output_{subfolder}_{image_0_name}_{img_1_name}_mask_1_gt.jpg")
                     mask0 = segment_image(segmentation_model, image0, viz_path_masking_0, args.device)
                     mask1 = segment_image(segmentation_model, image1, viz_path_masking_1, args.device)
                     subfolder_mask[f"{subfolder}_{pair_folder_name}"] = (mask0, mask1)
+                    print(f"{model_name}, {subfolder}, [{pair_folder_name}]: {mask0.shape}, {mask1.shape}, {image0.dtype}, {image1.dtype}")
 
-                # If we are processing other models and 'gt' flag is set, use the 'gt' masks for filtering
-                elif(gt_flag):
+                #  If 'gt' has been already processed apply the saved mask to the other model folders
+                if(gt_flag==True and model_name != gt_folder):
                     print(f"Taking mask from {subfolder} and {pair_folder_name}")
                     mask0 = subfolder_mask[f"{subfolder}_{pair_folder_name}"][0]
                     mask1 = subfolder_mask[f"{subfolder}_{pair_folder_name}"][1]
                     viz_path_masking_0 = os.path.join(curr_path_folder_image, f"output_{subfolder}_{image_0_name}_{img_1_name}_mask_0.jpg")
                     viz_path_masking_1 = os.path.join(curr_path_folder_image, f"output_{subfolder}_{image_0_name}_{img_1_name}_mask_1.jpg")
-                    #overlay_mask(image0, mask0, viz_path_masking_0)
-                    #overlay_mask(image1, mask1, viz_path_masking_1)
+                    overlay_mask(image0, mask0, viz_path_masking_0)
+                    overlay_mask(image1, mask1, viz_path_masking_1)
+                    print(f"{model_name}, {subfolder}, [{pair_folder_name}]: {mask0.shape}, {mask1.shape}, {image0.shape}, {image1.shape}")
 
+                #  If 'gt' is not present, apply the mask indipendetly for each model folder
+                elif(gt_flag==False and model_name != gt_folder):
+                    mask0 = segment_image(segmentation_model, image0, viz_path_masking_0, args.device)
+                    mask1 = segment_image(segmentation_model, image1, viz_path_masking_1, args.device)                    
 
                 # Perform keypoint matching between the two images
                 result = matcher(image0, image1)
@@ -292,7 +311,7 @@ def parse_args():
     )
 
     # Hyperparameters shared by all methods:
-    parser.add_argument("--im_size", type=int, default=512, help="resize img to im_size x im_size")
+    parser.add_argument("--im_size", type=int, default=1024, help="resize img to im_size x im_size")
     parser.add_argument("--n_kpts", type=int, default=2048, help="max num keypoints")
     parser.add_argument("--device", type=str, default="cuda", choices=["cpu", "cuda"])
     parser.add_argument("--no_viz", action="store_true", help="avoid saving visualizations")
@@ -310,6 +329,7 @@ def parse_args():
     parser.add_argument("--extract_keypoints", action="store_true", help="making the analysis of robustness without the inference process") 
     parser.add_argument("--images_to_be_paired", type=Path, default=None, help ="pair the image in folders by the name.") # frames_source\salient_frames_name_folder that could be salient_frames_name_folder/models/list_of_images.png or salient_frames_name_folder/models/image_folders/list_of_images.png
     parser.add_argument("--mask_type", type=int, default=None)
+    parser.add_argument("--gt_folder", type=str, default=None, help="path to the gt folder that is used for extracting the mask that will beused for the otehr model folders") 
 
     args = parser.parse_args()
 
@@ -345,7 +365,7 @@ def main(args):
                 print(f"Class to be masked: {class_chosen}")
             f.close()
 
-        extract_keypoints(args, args.mask_type, seg_model)
+        extract_keypoints(args, args.mask_type, seg_model, args.gt_folder)
 
         
 

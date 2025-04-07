@@ -17,7 +17,6 @@ def remove_black_borders_auto(frame):
     Returns:
         numpy.ndarray: Frame without black borders.
     """
-    assert frame is not None
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     _, thresh = cv2.threshold(gray, 20, 255, cv2.THRESH_BINARY)
 
@@ -56,7 +55,20 @@ def reading_video(file_path):
     cv2.destroyAllWindows()
 
 
-def choose_and_save_similar_frames(file_path, output_dir, folder_name, remove_contours, skip_interval_long=20, skip_interval_small=3):
+def skip_frames(cap, n_frames):
+    # Skip the specified number of frames
+    #print(f"Skipping {n_frames} frames.")
+    for _ in range(n_frames):
+        ret, frame = cap.read()
+        if not ret:
+            break
+        
+    
+    return frame
+
+
+
+def choose_and_save_similar_frames(file_path, output_dir, folder_name, remove_contours, frames_difference, skip_interval_long, skip_interval_small):
     """
     Allows manual selection of similar frame pairs to save for matching tasks.
     Enables skipping multiple frames at once.
@@ -85,27 +97,43 @@ def choose_and_save_similar_frames(file_path, output_dir, folder_name, remove_co
     previous_frame_bgr = None
     pair_count = 0
 
-    # Wait for user input to decide whether to save the frames
-    print("Press 's' to save this pair, or any other key to skip this pair.")
-    print(f"Press 'x' to skip {skip_interval_long} frames.")
-    print(f"Press 'c' to skip {skip_interval_small} frames.")
-    print(f"Press 'z' to end the analysis on the current video.")
 
     while True:
+        #iterating over frames
         ret, frame = cap.read()
+        # Check if the frame was read successfully
         if not ret or frame is None:
+            print("End of video or error reading frame.")
             break
         
+        if frames_difference!=1 and frame_index!=0:
+            print(f"Skipping {frames_difference} frames.")
+            frame = skip_frames(cap, frames_difference)
+        
+        # remove the contours if specified
         if remove_contours:
             frame = remove_black_borders_auto(frame)
 
         # Convert the current frame to grayscale
         gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         
-        if previous_frame is not None:
+        # Wait for user input to decide whether to save the frames
+        print("\n")
+        print("Press 's' to save this pair, or any other key to skip this pair.")
+        print(f"Press 'x' to skip {skip_interval_long} frames.")
+        print(f"Press 'c' to skip {skip_interval_small} frames.")
+        print(f"Press 'z' to end the analysis on the current video.")
+        print(f"Frame index: {frame_index}")
+        print(f"Pair saved until now: {pair_count}")
+        print("\n")
+
+        
+        if previous_frame_bgr is not None:
 
             cv2.imshow("Previous Frame", previous_frame_bgr)
             cv2.imshow("Current Frame", frame)
+
+            assert previous_frame_bgr.mean() != frame.mean()
     
             key = cv2.waitKey(0) & 0xFF
             
@@ -117,43 +145,38 @@ def choose_and_save_similar_frames(file_path, output_dir, folder_name, remove_co
                 cv2.imwrite(frame_2_path, frame)
                 print(f"Saved pair: {frame_1_path} and {frame_2_path}")
                 pair_count += 1
+                frame_index += 1
             
             elif key == ord('x'):
                 # Skip the specified number of frames
-                print(f"Skipping {skip_interval_long} frames.")
-                for _ in range(skip_interval_long):
-                    ret, frame = cap.read()
-                    if not ret:
-                        break
-                    if remove_contours:
-                        frame = remove_black_borders_auto(frame)
-                    gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                    previous_frame = gray_frame
-                    previous_frame_bgr = frame
-                    frame_index += 1
-                # Skip the rest of the loop and move on to the next frame
+                frame = skip_frames(cap, skip_interval_long)
+                if frame is None:
+                    print("Skipped to the video end.")
+                    break
+                if remove_contours:
+                    frame = remove_black_borders_auto(frame)
+                previous_frame_bgr = frame
+                frame_index += 1
+                # Skip the rest of the loop and move on to the next frame, starts at the beginning on the for while the previous frame has been saved here
                 continue
+            
             elif key == ord('c'):
                 # Skip the specified number of frames
-                print(f"Skipping {skip_interval_small} frames.")
-                for _ in range(skip_interval_small):
-                    ret, frame = cap.read()
-                    if not ret:
-                        break
-                    if remove_contours:
-                        frame = remove_black_borders_auto(frame)
-                    gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                    previous_frame = gray_frame
-                    previous_frame_bgr = frame
-                    frame_index += 1
-                # Skip the rest of the loop and move on to the next frame
+                frame = skip_frames(cap, skip_interval_small)
+                if frame is None:
+                    print("Skipped to the video end.")
+                    break
+                if remove_contours:
+                    frame = remove_black_borders_auto(frame)
+                previous_frame_bgr = frame
+                frame_index += 1
+                # Skip the rest of the loop and move on to the next frame,  starts at the beginning on the for while the previous frame has been saved here
                 continue
             elif key == ord("z"):
                 # Interrupt the video
                 break
 
         # Update the previous frame
-        previous_frame = gray_frame
         previous_frame_bgr = frame
         frame_index += 1
 
@@ -182,6 +205,9 @@ def parse_args():
     parser.add_argument("--out_dir", type=Path, default="frames_source", help="path where outputs are saved")
     parser.add_argument("--remove_contours", type=bool, default='True', help="Set True if you want to automatically black bourders.")
     parser.add_argument("--inner_folder_name", type=str, default="frames", help = "subdirectory name")
+    parser.add_argument("--frames_difference", type=int, default=1)
+    parser.add_argument("--skip_interval_long", type=int, default=20, help="Number of frames to skip at once after pressing a key.")
+    parser.add_argument("--skip_interval_small", type=int, default=3, help="Number of frames to skip at once after pressing a key.")
 
     args = parser.parse_args()
     return args
@@ -197,6 +223,7 @@ if __name__ == "__main__":
     for file in avi_files_path:
 
         subfix_frames = Path(file).stem
-        reading_video(file)
-        choose_and_save_similar_frames(file, f"{args.out_dir}/salient_frames_{subfix_frames}/{args.inner_folder_name}", subfix_frames, args.remove_contours)
+        #reading_video(file)
+        choose_and_save_similar_frames(file, f"{args.out_dir}/salient_frames_{subfix_frames}/{args.inner_folder_name}", 
+                                       subfix_frames, args.remove_contours, args.frames_difference ,args.skip_interval_long, args.skip_interval_small)
     

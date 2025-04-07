@@ -32,6 +32,9 @@ def plot_matches(
     Returns:
         List[plt.Axes]: plot axes
     """
+    img0 = np.clip(img0, 0.0, 1.0)
+    img1 = np.clip(img1, 0.0, 1.0)
+
     ax = viz2d.plot_images([img0, img1])
 
     if show_matched_kpts and "matched_kpts0" in result_dict.keys():
