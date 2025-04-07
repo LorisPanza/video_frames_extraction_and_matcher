@@ -233,5 +233,5 @@ if __name__ == "__main__":
             print("Creating folder")
             # args.out to save matched frames
             assert not(args.out_dir is None)
-            pair_images_in_folder(args.out_dir, args.out_dir)
+            pair_images_in_folder(args.out_dir, args.out_dir) #TODO: check this path 
     

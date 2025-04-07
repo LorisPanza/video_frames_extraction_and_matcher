@@ -316,12 +316,7 @@ def parse_args():
     parser.add_argument("--device", type=str, default="cuda", choices=["cpu", "cuda"])
     parser.add_argument("--no_viz", action="store_true", help="avoid saving visualizations")
 
-    parser.add_argument(
-        "--input",
-        type=Path,
-        default=None, #"assets/example_pairs"
-        help="path to either (1) dir with dirs with image pairs or (2) txt file with two image paths per line",
-    )
+    parser.add_argument("--input",type=Path,default=None,help="path to either (1) dir with dirs with image pairs or (2) txt file with two image paths per line")
 
     parser.add_argument("--out_dir", type=Path, default=None, help="path where outputs are saved") # frames_matched\name_folder_matched 
     #parser.add_argument("--sr_robustness", action="store_true", help="Apply the matcher and make the comparison and create a metric among swin, hat and pipeline output to prove the robustness of the model.") # it takes as input a path like: input_dir/models/image_folder/pair_folder/image.png
