@@ -20,7 +20,20 @@
 |---------------|--------------|
 |  <img src="assets\frames_extracted\salient_frames_855189-hd_1920_1080_30fps\gt\855189-hd_1920_1080_30fps_pair_0_1.jpg" /> | <img src="assets\frames_extracted\salient_frames_855189-hd_1920_1080_30fps\gt\855189-hd_1920_1080_30fps_pair_0_1.jpg" />|
 
+---
 
+## 🔧 Usage
+
+```bash
+python main.py \
+    --input /path/to/video_or_folder \
+    --out_dir output_folder \
+    --remove_contours True \
+    --inner_folder_name frames \
+    --frames_difference 1 \
+    --skip_interval_long 20 \
+    --skip_interval_small 3
+```
 ---
 
 ## 🧠 How It Works
