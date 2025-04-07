@@ -1,16 +1,16 @@
-# 🎞️ Video Frame Pair Extraction Tool
+# 🎞️ Video Frame Pairing Tool
 
-> A handy Python tool for extracting **salient frame pairs** from videos, with manual selection and border removal features. Perfect for training data creation in tasks like **frame matching**, **super-resolution**, and **temporal alignment**.
+This Python utility helps you **manually extract and save frame pairs** from videos for use in tasks such as **image matching**, **super-resolution**, or **temporal consistency training**. It also provides a post-processing function to **automatically organize the saved pairs** into structured folders.
 
 ---
 
-## 🚀 Features
+## 📌 Features
 
-- ✅ **Interactive frame selection**: View and save meaningful pairs with keyboard controls.
-- ✂️ **Automatic black border removal**.
-- ⏩ **Frame skipping**: Skip frames quickly with custom intervals.
-- 🎥 Supports `.avi` and `.mp4` video formats.
-- 📁 Automatically organizes output in structured folders.
+- 🚀 Manually browse through video frames.
+- 🖼️ Save pairs of visually similar frames by pressing a key.
+- 🧼 Optional automatic removal of black borders from each frame.
+- ⏩ Skip frames quickly (long and short intervals).
+- 🗂️ Automatically organize saved frames into structured folders based on their naming pattern.
 
 ---
 
@@ -18,24 +18,53 @@
 
 | Current Frame | Future Frame |
 |---------------|--------------|
-| ![Current](assets\frames_extracted\salient_frames_855189-hd_1920_1080_30fps\gt\855189-hd_1920_1080_30fps_pair_0_1.jpg) | ![Future](assets\frames_extracted\salient_frames_855189-hd_1920_1080_30fps\gt\855189-hd_1920_1080_30fps_pair_0_2.jpg) |
-
+|  <img src="assets\frames_extracted\salient_frames_855189-hd_1920_1080_30fps\gt\855189-hd_1920_1080_30fps_pair_0_1.jpg" /> | <img src="assets\frames_extracted\salient_frames_855189-hd_1920_1080_30fps\gt\855189-hd_1920_1080_30fps_pair_0_1.jpg" />|
 
 ---
 
 ## 🧠 How It Works
 
-The script reads a video, skips forward by a user-defined number of frames (`frames_difference`), and allows you to decide if the current frame and the future one form a useful pair. You can then:
+1. **Video Browsing**:
+   - The user is shown a current frame and another one a few frames ahead (configurable).
+   - Press:
+     - `s`: Save the current pair.
+     - `x`: Skip many frames.
+     - `c`: Skip a few frames.
+     - `z`: Exit the video.
+   - Pairs are saved as `video_name_pair_N_1.jpg` and `video_name_pair_N_2.jpg`.
 
-- Press `s` to **save the frame pair**.
-- Press `x` to **skip many frames** (long jump).
-- Press `c` to **skip a few frames** (short jump).
-- Press `z` to **stop the session**.
+2. **Automatic Folder Organization**:
+   - After frame selection, the script automatically scans the output directory, detects saved pairs, and organizes them into subfolders named after the prefix (`video_name`) of the images.
 
+--- 
+## 🔧 Usage
+
+```bash
+python main.py \
+    --input /path/to/video_or_folder \
+    --out_dir output_folder \
+    --remove_contours True \
+    --inner_folder_name frames \
+    --frames_difference 1 \
+    --skip_interval_long 20 \
+    --skip_interval_small 3 \
+    --images_to_be_paired True
+```
 ---
+## 🗂️ Folder structure
+- Suppose you processed videos from videos/ and saved frames in output_folder/, the structure might look like:
+```
+output_folder/
+├── salient_name_video/
+│   └── inner_folder_name/
+│       └── pair0 
+│          ├── video1_pair_0_1.jpg
+│          ├── video1_pair_0_2.jpg
+│       └── pair 1
+│          ├── ...
 
-
-    
+```
+---
 ### Acknowledgements
   
 Special thanks to the authors of the respective works that are included in this repo (see their papers above). Additional thanks to [@GrumpyZhou](https://github.com/GrumpyZhou) for developing and maintaining the [Image Matching Toolbox](https://github.com/GrumpyZhou/image-matching-toolbox/tree/main), which we have wrapped in this repo, and the [maintainers](https://github.com/kornia/kornia?tab=readme-ov-file#community) of [Kornia](https://github.com/kornia/kornia).
