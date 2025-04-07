@@ -18,7 +18,7 @@
 
 | Current Frame | Future Frame |
 |---------------|--------------|
-| ![Current](assets\frames_extracted\salient_frames_855189-hd_1920_1080_30fps\gt\855189-hd_1920_1080_30fps_pair_0_1.jpg) | ![Future](assets\frames_extracted\salient_frames_855189-hd_1920_1080_30fps\gt\855189-hd_1920_1080_30fps_pair_0_2.jpg) |
+|  <img src="assets\frames_extracted\salient_frames_855189-hd_1920_1080_30fps\gt\855189-hd_1920_1080_30fps_pair_0_1.jpg" /> | <img src="assets\frames_extracted\salient_frames_855189-hd_1920_1080_30fps\gt\855189-hd_1920_1080_30fps_pair_0_1.jpg" />|
 
 
 ---
