@@ -5,7 +5,7 @@ from pathlib import Path
 import cv2
 import os
 import argparse
-
+from matching.utils import pair_images_in_folder
 
 def remove_black_borders_auto(frame):
     """
@@ -56,7 +56,17 @@ def reading_video(file_path):
 
 
 def skip_frames(cap, n_frames):
-    # Skip the specified number of frames
+    """
+    Skip a specified number of frames in a video capture.
+    
+    Parameters:
+        cap: Pointer to the video capture object.
+        n_frames (int): Number of frames to skip.
+        
+    Returns:
+        frame (numpy.ndarray): The last frame read after skipping.
+        cap: Pointer to the video capture object.
+    """
     print(f"Skipping {n_frames} frames.")
     for _ in range(n_frames):
         ret, frame = cap.read()
@@ -199,6 +209,8 @@ def parse_args():
     parser.add_argument("--frames_difference", type=int, default=1, help = "Number of frames to skip forward to form a pair.")
     parser.add_argument("--skip_interval_long", type=int, default=20, help="Number of frames to skip at once after pressing a key.")
     parser.add_argument("--skip_interval_small", type=int, default=3, help="Number of frames to skip at once after pressing a key.")
+    parser.add_argument("--images_to_be_paired", type=bool, default=True, help ="pair the image in folders by the name.") # frames_source\salient_frames_name_folder that could be salient_frames_name_folder/models/list_of_images.png or salient_frames_name_folder/models/image_folders/list_of_images.png
+
 
     args = parser.parse_args()
     return args
@@ -212,9 +224,14 @@ if __name__ == "__main__":
     avi_files_path = [os.path.join(args.input,f) for f in avi_files]
 
     for file in avi_files_path:
-
         subfix_frames = Path(file).stem
         #reading_video(file)
         choose_and_save_similar_frames(file, f"{args.out_dir}/salient_frames_{subfix_frames}/{args.inner_folder_name}", 
-                                       subfix_frames, args.remove_contours, args.frames_difference ,args.skip_interval_long, args.skip_interval_small)
+                                       subfix_frames, args.remove_contours, args.frames_difference, args.skip_interval_long, args.skip_interval_small)
+    
+    if(not(args.images_to_be_paired is None)):
+            print("Creating folder")
+            # args.out to save matched frames
+            assert not(args.out_dir is None)
+            pair_images_in_folder(args.out_dir, args.out_dir)
     

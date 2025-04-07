@@ -4,7 +4,7 @@ from pathlib import Path
 import os
 import numpy as np
 import re
-from matching.utils import get_image_pairs_paths, get_model_folders, load_torch_save, pair_images_in_folder
+from matching.utils import get_image_pairs_paths, get_model_folders, load_torch_save
 from matching import get_matcher, available_models
 from matching.viz import plot_matches, plot_barplot_curr_folder
 from utils_segmentation import load_segmentation_model, segment_image, filter_keypoints_by_mask, filter_matched_keypoints_by_mask, overlay_mask
@@ -327,7 +327,6 @@ def parse_args():
     #parser.add_argument("--sr_robustness", action="store_true", help="Apply the matcher and make the comparison and create a metric among swin, hat and pipeline output to prove the robustness of the model.") # it takes as input a path like: input_dir/models/image_folder/pair_folder/image.png
     parser.add_argument("--analysis",action="store_true", help="making the analysis of robustness without the inference process") 
     parser.add_argument("--extract_keypoints", action="store_true", help="making the analysis of robustness without the inference process") 
-    parser.add_argument("--images_to_be_paired", type=Path, default=None, help ="pair the image in folders by the name.") # frames_source\salient_frames_name_folder that could be salient_frames_name_folder/models/list_of_images.png or salient_frames_name_folder/models/image_folders/list_of_images.png
     parser.add_argument("--mask_type", type=int, default=None)
     parser.add_argument("--gt_folder", type=str, default=None, help="path to the gt folder that is used for extracting the mask that will beused for the otehr model folders") 
 
@@ -342,12 +341,6 @@ def parse_args():
 def main(args):
 
     assert args.mask_type in range(1,21) or args.mask_type is None
-
-    if(not(args.images_to_be_paired is None)):
-            print("Creating folder")
-            # args.out to save matched frames
-            assert not(args.out_dir is None)
-            pair_images_in_folder(args.images_to_be_paired, args.out_dir)
 
     if(args.analysis):
         assert not(args.out_dir is None)
@@ -368,7 +361,6 @@ def main(args):
         extract_keypoints(args, args.mask_type, seg_model, args.gt_folder)
 
         
-
 
 if __name__ == "__main__":
     args = parse_args()
