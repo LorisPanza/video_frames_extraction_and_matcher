@@ -18,7 +18,7 @@ This Python utility helps you **manually extract and save frame pairs** from vid
 
 | Current Frame | Future Frame |
 |---------------|--------------|
-|  <img src="assets\frames_paired\salient_frames_855189-hd_1920_1080_30fps\gt\pair_0\855189-hd_1920_1080_30fps_pair_0_1.jpg" /> | <img src="assets\frames_paired\salient_frames_855189-hd_1920_1080_30fps\gt\pair_0\855189-hd_1920_1080_30fps_pair_0_2.jpg" />|
+|  <img src="frames_paired\salient_frames_855189-hd_1920_1080_30fps\gt\pair_0\855189-hd_1920_1080_30fps_pair_0_1.jpg" /> | <img src="frames_paired\salient_frames_855189-hd_1920_1080_30fps\gt\pair_0\855189-hd_1920_1080_30fps_pair_0_2.jpg" />|
 
 ---
 

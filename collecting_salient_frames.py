@@ -203,7 +203,7 @@ def parse_args():
         default="D:/dataset/superresolution/videos",
         help="path to either dir with dirs with videos",
     )
-    parser.add_argument("--out_dir", type=Path, default="frames_source", help="path where outputs are saved")
+    parser.add_argument("--out_dir", type=str, default="frames_source", help="path where outputs are saved")
     parser.add_argument("--remove_contours", type=bool, default='True', help="Set True if you want to automatically black bourders.")
     parser.add_argument("--inner_folder_name", type=str, default="frames", help = "subdirectory name")
     parser.add_argument("--frames_difference", type=int, default=1, help = "Number of frames to skip forward to form a pair.")
@@ -226,12 +226,13 @@ if __name__ == "__main__":
     for file in avi_files_path:
         subfix_frames = Path(file).stem
         #reading_video(file)
-        choose_and_save_similar_frames(file, f"{args.out_dir}/salient_frames_{subfix_frames}/{args.inner_folder_name}", 
+        choose_and_save_similar_frames(file, f"frames_not_paired/salient_frames_{subfix_frames}/{args.inner_folder_name}", 
                                        subfix_frames, args.remove_contours, args.frames_difference, args.skip_interval_long, args.skip_interval_small)
     
     if(not(args.images_to_be_paired is None)):
             print("Creating folder")
             # args.out to save matched frames
             assert not(args.out_dir is None)
-            pair_images_in_folder(args.out_dir, args.out_dir) #TODO: check this path 
+            pair_images_in_folder("frames_not_paired", args.out_dir) #TODO: check this path 
+            
     
