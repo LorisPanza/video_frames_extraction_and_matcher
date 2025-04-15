@@ -20,6 +20,14 @@ This Python utility helps you **manually extract and save frame pairs** from vid
 |---------------|--------------|
 |  <img src="frames_paired\salient_frames_855189-hd_1920_1080_30fps\gt\pair_0\855189-hd_1920_1080_30fps_pair_0_1.jpg" /> | <img src="frames_paired\salient_frames_855189-hd_1920_1080_30fps\gt\pair_0\855189-hd_1920_1080_30fps_pair_0_2.jpg" />|
 
+| Frames not masked and matched|
+|---------------|
+|  <img src="frames_matched_wihtout_mask\salient_frames_855189-hd_1920_1080_30fps\gt\output_gt_855189-hd_1920_1080_30fps_pair_0_1_855189-hd_1920_1080_30fps_pair_0_2_matches.jpg" />|
+
+| Frames masked and matched|
+|---------------|
+|  <img src="frames_matched_wiht_mask\salient_frames_855189-hd_1920_1080_30fps\gt\output_gt_855189-hd_1920_1080_30fps_pair_0_1_855189-hd_1920_1080_30fps_pair_0_2_matches.jpg" />|
+
 ---
 
 ## 🧠 How It Works
@@ -34,7 +42,7 @@ This Python utility helps you **manually extract and save frame pairs** from vid
    - Pairs are saved as `video_name_pair_N_1.jpg` and `video_name_pair_N_2.jpg`.
 
 2. **Automatic Folder Organization**:
-   - After frame selection, the script automatically scans the output directory, detects saved pairs, and organizes them into subfolders named after the prefix (`video_name`) of the images.
+   - After frame selection, the script automatically scans the output directory, detects saved pairs, and organizes them into subfolders.
 
 
 3. **💡 Keypoint Matching with Segmentation-based Masking [NEW]**:
@@ -49,7 +57,7 @@ This Python utility helps you **manually extract and save frame pairs** from vid
 
 --- 
 ## 🆕 Semantic-Aware Keypoint Matching
-- 📥 Step 1: Save Frame Pairs
+### - 📥 Step 1: Save Frame Pairs
 First, use the basic tool to extract and save frame pairs from your video(s).
 
 ```bash
@@ -63,7 +71,6 @@ python collecting_salient_frames.py \
     --skip_interval_small 3 \
     --images_to_be_paired True
 ```
-### 🗂️ Folder structure
 - Suppose you processed videos from videos/ and saved frames in output_folder/, the structure might look like:
 ```
 output_folder/
@@ -77,18 +84,42 @@ output_folder/
 
 ```
 
-- 🧠 Step 2: Extract Keypoints within Specific Masked Regions
+### - 🧠 Step 2: Extract Keypoints within Specific Masked Regions
 Once pairs are extracted, run the following:
 
 ```bash
-python main.py \
+python main_matcher.py \
     --extract_keypoints \
     --input output_folder \
     --out_dir frames_matched \
     --mask_type 4 \
     --matcher sift-lg \
 ```
----
+- 🧠 Smart Mask Sharing via "--gt_folder"
+  
+If a --gt_folder is provided, the tool uses the segmentation masks generated from that folder and reuses them for matching in all other folders (e.g., different models or augmentations of the same video).
+
+🔁 This ensures that all matchings across models (e.g., gt, hat, lq) are filtered using consistent masks, enabling robust comparisons and fair benchmarking.
+
+📌 Example:
+--input frames_paired/salient_video/
+```bash
+├── gt/           ← masks are extracted here
+├── hat/          ← same images, different model
+├── lq/           ← low-quality version
+```
+```bash
+--gt_folder gt 
+--mask_type 4
+```
+### 🔧 Parameters
+
+| Argument            | Description                                                                 |
+|---------------------|-----------------------------------------------------------------------------|
+| `--extract_keypoints` | Enables keypoint extraction and matching                                   |
+| `--mask_type`         | Pascal VOC class ID to filter keypoints (e.g., `4` = boat, `15` = person) |
+| `--gt_folder`         | Folder used to extract segmentation masks and apply them to other folders |
+| `--matcher`           | Keypoint matcher to use (`sift-lg`, `superpoint-lightglue`, etc.)         |
 
 ---
 ### Acknowledgements
