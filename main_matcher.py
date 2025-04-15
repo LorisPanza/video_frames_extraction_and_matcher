@@ -90,7 +90,8 @@ def masking_result(result, mask_number, mask0=None, mask1=None):
         return result
 
 
-
+#TODO: analysis on csv files
+'''
 def robustness_analysis(out_dir, plot=True):
     """
     Analyzes the robustness of model outputs by computing inlier ratios from saved results.
@@ -167,6 +168,8 @@ def robustness_analysis(out_dir, plot=True):
     for key, val in dict_performances.items():
         print(f"Mean array {key}: {val}")
 
+'''
+
 
 def extract_keypoints(args, mask_number, segmentation_model, gt_folder=None):
     """
@@ -235,8 +238,11 @@ def extract_keypoints(args, mask_number, segmentation_model, gt_folder=None):
                 curr_path_folder_image = os.path.join(out_model_path, subfolder)
                 os.makedirs(name=curr_path_folder_image, exist_ok=True)
                 viz_path_matching = os.path.join(curr_path_folder_image, f"output_{subfolder}_{image_0_name}_{img_1_name}_matches.jpg")
-                viz_path_masking_0 = os.path.join(curr_path_folder_image, f"output_{subfolder}_{image_0_name}_{img_1_name}_mask_0.jpg")
-                viz_path_masking_1 = os.path.join(curr_path_folder_image, f"output_{subfolder}_{image_0_name}_{img_1_name}_mask_1.jpg")
+                #TODO: considering plotting mask
+                viz_path_masking_0 = None
+                viz_path_masking_1 = None
+                #viz_path_masking_0 = os.path.join(curr_path_folder_image, f"output_{subfolder}_{image_0_name}_{img_1_name}_mask_0.jpg")
+                #viz_path_masking_1 = os.path.join(curr_path_folder_image, f"output_{subfolder}_{image_0_name}_{img_1_name}_mask_1.jpg")
 
                 
                 # Load the images (resize them to the specified size)
@@ -258,8 +264,9 @@ def extract_keypoints(args, mask_number, segmentation_model, gt_folder=None):
                     mask1 = subfolder_mask[f"{subfolder}_{pair_folder_name}"][1]
                     viz_path_masking_0 = os.path.join(curr_path_folder_image, f"output_{subfolder}_{image_0_name}_{img_1_name}_mask_0.jpg")
                     viz_path_masking_1 = os.path.join(curr_path_folder_image, f"output_{subfolder}_{image_0_name}_{img_1_name}_mask_1.jpg")
-                    overlay_mask(image0, mask0, viz_path_masking_0)
-                    overlay_mask(image1, mask1, viz_path_masking_1)
+                     #TODO: considering plotting mask
+                    #overlay_mask(image0, mask0, viz_path_masking_0)
+                    #overlay_mask(image1, mask1, viz_path_masking_1)
                     print(f"{model_name}, {subfolder}, [{pair_folder_name}]: {mask0.shape}, {mask1.shape}, {image0.shape}, {image1.shape}")
 
                 #  If 'gt' is not present, apply the mask indipendetly for each model folder
@@ -315,9 +322,10 @@ def parse_args():
     parser.add_argument("--n_kpts", type=int, default=2048, help="max num keypoints")
     parser.add_argument("--device", type=str, default="cuda", choices=["cpu", "cuda"])
     parser.add_argument("--no_viz", action="store_true", help="avoid saving visualizations")
-    parser.add_argument("--input",type=Path,default=None,help="path to either (1) dir with dirs with image pairs or (2) txt file with two image paths per line")
+    parser.add_argument("--input",type=Path,default=None,help="path to either dir with dirs with images")
     parser.add_argument("--out_dir", type=Path, default=None, help="path where outputs are saved") # frames_matched\name_folder_matched 
-    parser.add_argument("--analysis",action="store_true", help="making the analysis of robustness without the inference process") 
+    #TODO: analysis on csv files
+    #parser.add_argument("--analysis",action="store_true", help="making the analysis of robustness without the inference process") 
     parser.add_argument("--extract_keypoints", action="store_true", help="making the analysis of robustness without the inference process") 
     parser.add_argument("--mask_type", type=int, default=None)
     parser.add_argument("--gt_folder", type=str, default=None, help="path to the gt folder that is used for extracting the mask that will beused for the otehr model folders") 
@@ -334,9 +342,10 @@ def main(args):
 
     assert args.mask_type in range(1,21) or args.mask_type is None
 
-    if(args.analysis):
-        assert not(args.out_dir is None)
-        robustness_analysis(args.out_dir)
+    #TODO: analysis on csv files
+    #if(args.analysis):
+    #    assert not(args.out_dir is None)
+    #    robustness_analysis(args.out_dir)
 
     if(args.extract_keypoints):
         #args in to consider the input folder, args out to write the ouput

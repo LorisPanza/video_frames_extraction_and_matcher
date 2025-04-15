@@ -29,18 +29,31 @@ This Python utility helps you **manually extract and save frame pairs** from vid
    - Press:
      - `s`: Save the current pair.
      - `x`: Skip many frames.
-     - `c`: Skip a few frames.
+     - `c`: Skip few frames.
      - `z`: Exit the video.
    - Pairs are saved as `video_name_pair_N_1.jpg` and `video_name_pair_N_2.jpg`.
 
 2. **Automatic Folder Organization**:
    - After frame selection, the script automatically scans the output directory, detects saved pairs, and organizes them into subfolders named after the prefix (`video_name`) of the images.
 
+
+3. **💡 Keypoint Matching with Segmentation-based Masking [NEW]**:
+
+  - You can run a post-processing phase to extract and match keypoints only in semantically relevant areas of the images (e.g., only boats, people, etc.) using a pretrained segmentation model.
+
+  - The DeepLabV3 segmentation model is applied on each frame.
+
+  - Keypoints are matched only within a specific object class (defined by a Pascal VOC class ID).
+
+
+
 --- 
-## 🔧 Usage
+## 🆕 Semantic-Aware Keypoint Matching
+- 📥 Step 1: Save Frame Pairs
+First, use the basic tool to extract and save frame pairs from your video(s).
 
 ```bash
-python main.py \
+python collecting_salient_frames.py \
     --input /path/to/video_or_folder \
     --out_dir output_folder \
     --remove_contours True \
@@ -50,8 +63,7 @@ python main.py \
     --skip_interval_small 3 \
     --images_to_be_paired True
 ```
----
-## 🗂️ Folder structure
+### 🗂️ Folder structure
 - Suppose you processed videos from videos/ and saved frames in output_folder/, the structure might look like:
 ```
 output_folder/
@@ -64,6 +76,20 @@ output_folder/
 │          ├── ...
 
 ```
+
+- 🧠 Step 2: Extract Keypoints within Specific Masked Regions
+Once pairs are extracted, run the following:
+
+```bash
+python main.py \
+    --extract_keypoints \
+    --input output_folder \
+    --out_dir frames_matched \
+    --mask_type 4 \
+    --matcher sift-lg \
+```
+---
+
 ---
 ### Acknowledgements
   
