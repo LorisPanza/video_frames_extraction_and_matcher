@@ -1,16 +1,32 @@
-# 🎞️ Video Frame Pairing Tool
+# 🎞️ Video Frame Pairing & Semantic Matching Tool
+A Python tool for manually extracting and organizing frame pairs from videos, designed for use in tasks like image matching, super-resolution, and temporal consistency training.
 
-This Python utility helps you **manually extract and save frame pairs** from videos for use in tasks such as **image matching**, **super-resolution**, or **temporal consistency training**. It also provides a post-processing function to **automatically organize the saved pairs** into structured folders.
+✨ The tool also supports a post-processing phase for keypoint extraction and matching, where keypoints are filtered by semantic segmentation masks (e.g., only on objects like boats, people, cars). This enables precise, object-aware evaluation and dataset creation for vision-based models.
+
+Whether you're building a training dataset, analyzing model robustness, or benchmarking matching algorithms — this tool streamlines the process from video to clean, structured pairs with deep matching capabilities.
 
 ---
 
 ## 📌 Features
 
-- 🚀 Manually browse through video frames.
-- 🖼️ Save pairs of visually similar frames by pressing a key.
-- 🧼 Optional automatic removal of black borders from each frame.
-- ⏩ Skip frames quickly (long and short intervals).
-- 🗂️ Automatically organize saved frames into structured folders based on their naming pattern.
+- 🖼️ **Manual Frame Pairing**  
+  Easily browse videos and select frame pairs with simple keyboard shortcuts. Ideal for creating datasets for super-resolution, image matching, or temporal consistency.
+
+- ⏩ **Flexible Frame Skipping**  
+  Quickly navigate through the video using short (`c`) and long (`x`) skip intervals to efficiently reach points of interest.
+
+- 🧼 **Automatic Border Removal**  
+  Optionally detect and remove black borders from each frame to improve alignment and visual consistency.
+
+- 🗂️ **Structured Output Organization**  
+  Automatically saves and organizes extracted frame pairs into nested folders based on video name and pair ID, simplifying data management and labeling.
+
+- 🔍 **Segmentation-Aware Keypoint Matching** *(NEW)*  
+  Run a second-stage process to extract and match keypoints **only within semantically segmented regions** (e.g., only on boats or people) using DeepLabV3. Ensures precise matching on objects of interest.
+
+- 🔁 **Shared Ground Truth Masks Support**  
+  Extract masks from a `gt` folder and reuse them across other models (e.g., `lq`, `hat`) to ensure consistent object-based filtering and fair comparison.
+
 
 ---
 
